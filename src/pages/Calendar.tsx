@@ -1,24 +1,26 @@
 import { useState } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { getStatusChartColor, getStatusColor, cn } from "@/lib/utils";
-import { MOCK_CHECKS } from "@/lib/mock-data";
+import { useApp } from "@/lib/AppContext";
+import { NewCheckModal } from "@/components/NewCheckModal";
 
 export function Calendar() {
-  const [currentDate, setCurrentDate] = useState(new Date("2023-11-01")); // Using strict date to match mock data
+  const { checks } = useApp();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [isNewCheckModalOpen, setIsNewCheckModalOpen] = useState(false);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  
+
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  
-  // Pad beginning of month
-  const startDayOfWeek = monthStart.getDay() || 7; // 1 (Mon) to 7 (Sun)
+
+  const startDayOfWeek = monthStart.getDay() || 7;
   const paddedDays = Array.from({ length: startDayOfWeek - 1 }).map((_, i) => null);
 
-  const prevMonth = () => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)));
-  const nextMonth = () => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)));
+  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto h-[calc(100vh-6rem)] flex flex-col">
@@ -40,7 +42,7 @@ export function Calendar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-primary text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:bg-emerald-600 transition shadow-sm border-none cursor-pointer">
+          <button onClick={() => setIsNewCheckModalOpen(true)} className="flex items-center gap-2 bg-primary text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:bg-emerald-600 transition shadow-sm border-none cursor-pointer">
             <Plus className="w-3.5 h-3.5" />
             Nouveau Chèque
           </button>
@@ -67,20 +69,20 @@ export function Calendar() {
             </div>
           ))}
         </div>
-        
+
         <div className="flex-1 grid grid-cols-7 auto-rows-fr font-sans">
           {paddedDays.map((_, i) => (
             <div key={`pad-${i}`} className="border-b border-r border-slate-100 bg-slate-50/50" />
           ))}
-          
+
           {daysInMonth.map((day, i) => {
             const dateStr = format(day, "yyyy-MM-dd");
-            const dayChecks = MOCK_CHECKS.filter(c => c.dueDate === dateStr || c.emissionDate === dateStr);
+            const dayChecks = checks.filter(c => c.dueDate === dateStr || c.emissionDate === dateStr);
             const isCurrentMonth = isSameMonth(day, currentDate);
-            
+
             return (
-              <div 
-                key={day.toISOString()} 
+              <div
+                key={day.toISOString()}
                 className={cn(
                   "border-b border-r border-slate-100 p-2 overflow-y-auto transition-colors hover:bg-slate-50",
                   !isCurrentMonth && "bg-slate-50/50 text-slate-400",
@@ -88,24 +90,21 @@ export function Calendar() {
                 )}
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className={cn(
-                    "text-[12px] font-bold w-6 h-6 flex items-center justify-center rounded-full",
-                    isToday(day) ? "bg-primary text-white" : "text-slate-700"
-                  )}>
+                  <span className={cn("text-[12px] font-bold w-6 h-6 flex items-center justify-center rounded-full", isToday(day) ? "bg-primary text-white" : "text-slate-700")}>
                     {format(day, "d")}
                   </span>
                 </div>
-                
+
                 <div className="space-y-1">
                   {dayChecks.map(check => (
-                    <div 
-                      key={check.id} 
+                    <div
+                      key={check.id}
                       className={cn(
                         "text-[10px] px-1.5 py-1 rounded-[4px] border truncate flex flex-col cursor-pointer hover:shadow-sm transition",
-                        getStatusColor(check.status).split(' ')[0], // Get bg-color
-                        getStatusColor(check.status).split(' ')[2]  // Get border-color
+                        getStatusColor(check.status).split(" ")[0],
+                        getStatusColor(check.status).split(" ")[2]
                       )}
-                      title={`${check.partnerName} - ${check.amount} MAD`}
+                      title={`${check.partnerName} - ${check.amount.toLocaleString()} MAD`}
                     >
                       <div className="font-bold truncate text-slate-800">{check.partnerName}</div>
                       <div className="truncate opacity-80 text-slate-600">{check.amount.toLocaleString()} MAD</div>
@@ -117,6 +116,7 @@ export function Calendar() {
           })}
         </div>
       </div>
+      <NewCheckModal isOpen={isNewCheckModalOpen} onClose={() => setIsNewCheckModalOpen(false)} />
     </div>
   );
 }

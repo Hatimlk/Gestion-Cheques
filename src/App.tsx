@@ -1,38 +1,51 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense, type ReactNode } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AppProvider, useApp } from "@/lib/AppContext";
 import { Layout } from "./components/layout/Layout";
-import { Dashboard } from "./pages/Dashboard";
-import { BankAccounts } from "./pages/BankAccounts";
-import { IssuedChecks } from "./pages/IssuedChecks";
-import { Checkbooks } from "./pages/Checkbooks";
-import { Calendar } from "./pages/Calendar";
 
-// Placeholder components for other routes
-const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex items-center justify-center h-full text-slate-500">
-    <div className="text-center space-y-2">
-      <div className="text-[18px] font-bold text-slate-900">{title}</div>
-      <p className="text-[13px]">Ce module est en cours de développement.</p>
-    </div>
-  </div>
-);
+const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
+const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
+const BankAccounts = lazy(() => import("./pages/BankAccounts").then(m => ({ default: m.BankAccounts })));
+const IssuedChecks = lazy(() => import("./pages/IssuedChecks").then(m => ({ default: m.IssuedChecks })));
+const Checkbooks = lazy(() => import("./pages/Checkbooks").then(m => ({ default: m.Checkbooks })));
+const Calendar = lazy(() => import("./pages/Calendar").then(m => ({ default: m.Calendar })));
+const Partners = lazy(() => import("./pages/Partners").then(m => ({ default: m.Partners })));
+const Roles = lazy(() => import("./pages/Roles").then(m => ({ default: m.Roles })));
+const PrintModule = lazy(() => import("./pages/PrintModule").then(m => ({ default: m.PrintModule })));
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useApp();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="comptes" element={<BankAccounts />} />
-          <Route path="emis" element={<IssuedChecks />} />
-          <Route path="roles" element={<Placeholder title="Rôles & Permissions" />} />
-          <Route path="carnets" element={<Checkbooks />} />
-          <Route path="recus" element={<Placeholder title="Chèques Reçus" />} />
-          <Route path="calendrier" element={<Calendar />} />
-          <Route path="partenaires" element={<Placeholder title="Partenaires" />} />
-          <Route path="chat" element={<Placeholder title="Support Chat" />} />
-          <Route path="billing" element={<Placeholder title="Abonnement" />} />
-        </Route>
-      </Routes>
+      <AppProvider>
+        <Routes>
+          <Route path="/login" element={<Suspense fallback={<LoadingFallback />}><LoginPage /></Suspense>} />
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route index element={<Suspense fallback={<LoadingFallback />}><Dashboard /></Suspense>} />
+            <Route path="comptes" element={<Suspense fallback={<LoadingFallback />}><BankAccounts /></Suspense>} />
+            <Route path="emis" element={<Suspense fallback={<LoadingFallback />}><IssuedChecks /></Suspense>} />
+            <Route path="impression" element={<Suspense fallback={<LoadingFallback />}><PrintModule /></Suspense>} />
+            <Route path="roles" element={<Suspense fallback={<LoadingFallback />}><Roles /></Suspense>} />
+            <Route path="carnets" element={<Suspense fallback={<LoadingFallback />}><Checkbooks /></Suspense>} />
+            <Route path="calendrier" element={<Suspense fallback={<LoadingFallback />}><Calendar /></Suspense>} />
+            <Route path="partenaires" element={<Suspense fallback={<LoadingFallback />}><Partners /></Suspense>} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AppProvider>
     </BrowserRouter>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+    </div>
   );
 }
