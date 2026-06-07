@@ -1,13 +1,13 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { 
-  BarChart, 
-  Wallet, 
-  Users, 
-  BookCopy, 
-  ArrowUpRight, 
+import {
+  BarChart,
+  Wallet,
+  Users,
+  BookCopy,
+  ArrowUpRight,
   Printer,
-  CalendarDays, 
-  Building2, 
+  CalendarDays,
+  Building2,
   LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";

@@ -130,7 +130,7 @@ export function PrintModal({ check, onClose }: PrintModalProps) {
             onClick={() => {
               window.print();
             }}
-            className="px-4 py-2 text-[13px] font-semibold text-white bg-primary rounded-[6px] hover:bg-emerald-600 transition flex items-center gap-2 border-none cursor-pointer"
+            className="px-4 py-2 text-[13px] font-semibold text-white bg-primary rounded-[6px] hover:opacity-90 transition flex items-center gap-2 border-none cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             Imprimer

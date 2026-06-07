@@ -145,7 +145,7 @@ export function NewCheckbookModal({ isOpen, onClose }: NewCheckbookModalProps) {
             <button
               type="submit"
               disabled={!isFormValid}
-              className={`px-6 py-2.5 text-[14px] font-bold rounded-[8px] transition border-none cursor-pointer ${isFormValid ? 'bg-primary text-white hover:bg-emerald-600' : 'bg-[#E2E8F0] text-[#94A3B8]'}`}
+              className={`px-6 py-2.5 text-[14px] font-bold rounded-[8px] transition border-none cursor-pointer ${isFormValid ? 'bg-primary text-white hover:opacity-90' : 'bg-[#E2E8F0] text-[#94A3B8]'}`}
             >
               Sauvegarder
             </button>

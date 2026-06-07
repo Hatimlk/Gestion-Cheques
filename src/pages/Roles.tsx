@@ -48,7 +48,7 @@ export function Roles() {
           <p className="text-[12px] text-slate-500 m-0">Gérez les accès de vos collaborateurs.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={openNewUserModal} className="flex items-center gap-2 bg-primary text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:bg-emerald-600 transition shadow-sm border-none cursor-pointer">
+          <button onClick={openNewUserModal} className="flex items-center gap-2 bg-primary text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:opacity-90 transition shadow-sm border-none cursor-pointer">
             <Plus className="w-3.5 h-3.5" />
             Nouvel Utilisateur
           </button>
@@ -66,7 +66,7 @@ export function Roles() {
           </div>
         </div>
         <div className="bg-white p-4 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
             <UserIcon className="w-6 h-6" />
           </div>
           <div>

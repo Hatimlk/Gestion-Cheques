@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Printer, Save, RotateCcw } from "lucide-react";
 import { motion } from "motion/react";
 import { amountToFrench } from "@/lib/numberToLetters";
+import { useApp } from "@/lib/AppContext";
 
 type ElementId = 'amountLetters' | 'amountNumbers' | 'payee' | 'place' | 'date' | 'dueDate' | 'cause';
 
@@ -45,6 +46,7 @@ const BANKS = [
 
 export function PrintModule() {
   const location = useLocation();
+  const { addCheck, bankAccounts } = useApp();
 
   const [bankType, setBankType] = useState("ATTIJARIWAFA BANK - Chèque");
   const [amount, setAmount] = useState("");
@@ -59,10 +61,12 @@ export function PrintModule() {
   const [positions, setPositions] = useState<Record<ElementId, Position>>(DEFAULT_CHEQUE_POSITIONS);
 
   const isEffet = bankType.includes("- Effet");
+  const [isFromExisting, setIsFromExisting] = useState(false);
 
   useEffect(() => {
     const state = location.state as Record<string, string> | null;
     if (state) {
+      if (state.checkNumber) setIsFromExisting(true);
       if (state.bankType) setBankType(state.bankType);
       if (state.amount) setAmount(state.amount);
       if (state.payee) setPayee(state.payee);
@@ -126,6 +130,29 @@ export function PrintModule() {
 
   const handlePrint = () => {
     window.print();
+
+    if (!isFromExisting) {
+      const bankName = bankType.split(" - ")[0];
+      const type = bankType.includes("- Effet") ? "Effet" : "Chèque";
+      
+      let account = bankAccounts.find(a => a.bankName.toUpperCase() === bankName.toUpperCase());
+      let bankAccountId = account ? account.id : (bankAccounts[0]?.id || "b1");
+
+      const parsedAmount = parseFloat(amount.replace(/ /g, "").replace(/,/g, ".")) || 0;
+
+      addCheck({
+        bankAccountId,
+        type: type as "Chèque" | "Effet",
+        number: `IMP-${Date.now().toString().slice(-4)}`,
+        partnerId: `p_${Date.now()}`,
+        partnerName: payee || "Inconnu",
+        emissionDate: date || new Date().toISOString().split("T")[0],
+        dueDate: type === "Effet" ? (dueDate || new Date().toISOString().split("T")[0]) : (date || new Date().toISOString().split("T")[0]),
+        amount: parsedAmount,
+        isReceived: false,
+      });
+      setIsFromExisting(true);
+    }
   };
 
   const getFormattedAmount = () => {
@@ -178,7 +205,7 @@ export function PrintModule() {
             <select
               value={bankType}
               onChange={(e) => setBankType(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-emerald-50 text-emerald-900 border-emerald-200 font-semibold"
+              className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-primary/10 text-primary border-primary/20 font-semibold"
             >
               <optgroup label="Chèques">
                 {BANKS.filter(b => b.chequeFile).map(b => (
@@ -247,7 +274,7 @@ export function PrintModule() {
             <select
               value={checkType}
               onChange={(e) => setCheckType(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-emerald-50 text-emerald-900 border-emerald-200"
+              className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-primary/10 text-primary border-primary/20"
             >
               <option value="Chèque normal">Chèque normal</option>
               <option value="Chèque barré">Chèque barré</option>
@@ -335,7 +362,7 @@ export function PrintModule() {
           </button>
           <button
             onClick={savePositions}
-            className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2.5 rounded-[8px] text-[13px] font-semibold hover:bg-emerald-600 transition shadow-sm border-none cursor-pointer"
+            className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-[8px] text-[13px] font-semibold hover:opacity-90 transition shadow-sm border-none cursor-pointer"
           >
             <Save className="w-4 h-4" />
             Enregistrer les positions

@@ -116,7 +116,7 @@ export function NewUserModal({ isOpen, onClose, onSave, editUser }: NewUserModal
               <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-[6px] hover:bg-slate-50 transition cursor-pointer">
                 Annuler
               </button>
-              <button type="submit" className="px-4 py-2 text-[13px] font-semibold text-white bg-primary rounded-[6px] hover:bg-emerald-600 transition border-none cursor-pointer">
+              <button type="submit" className="px-4 py-2 text-[13px] font-semibold text-white bg-primary rounded-[6px] hover:opacity-90 transition border-none cursor-pointer">
                 {editUser ? "Sauvegarder" : "Créer"}
               </button>
             </div>

@@ -34,12 +34,25 @@ export const getStatusColor = (status: string) => {
 
 export const getStatusChartColor = (status: string) => {
   switch (status) {
-    case "En Circulation": return "#FBBF24"; // yellow
-    case "En Retard": return "#EF4444"; // red
-    case "Déposé": return "#3B82F6"; // blue
-    case "Impayé": return "#F97316"; // orange
-    case "Payé": return "#10B981"; // green
-    case "Annulé": return "#9CA3AF"; // gray
+    case "En Circulation": return "#FBBF24";
+    case "En Retard": return "#EF4444";
+    case "Déposé": return "#3B82F6";
+    case "Impayé": return "#F97316";
+    case "Payé": return "#10B981";
+    case "Annulé": return "#9CA3AF";
     default: return "#9CA3AF";
   }
+};
+
+export const getBankLogo = (bankName: string): string | null => {
+  const name = bankName.toLowerCase();
+  if (name.includes('attijari') || name.includes('awb')) return '/logos-bank/Attijariwafa Bank.png';
+  if (name.includes('africa') || name.includes('boa')) return '/logos-bank/Bank Of Africa.png';
+  if (name.includes('populaire') || name.includes('bp') || name.includes('banque pop')) return '/logos-bank/Bp.jpeg';
+  if (name.includes('saham')) return '/logos-bank/Saham Bank.png';
+  if (name.includes('barid')) return '/logos-bank/baridbank.png';
+  if (name.includes('bmci')) return '/logos-bank/bmci.jpeg';
+  if (name.includes('cdm') || name.includes('crédit du maroc') || name.includes('credit du maroc')) return '/logos-bank/cdm.png';
+  if (name.includes('agricole') || name.includes('cam')) return '/logos-bank/creditagricole.png';
+  return null;
 };

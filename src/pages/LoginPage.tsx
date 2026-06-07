@@ -36,7 +36,7 @@ export function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="exemple@gadimat.ma"
+              placeholder="admin@gadimat.ma"
               required
               className="w-full px-3 py-2.5 border border-slate-200 rounded-[8px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
@@ -57,12 +57,6 @@ export function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 pt-4 border-t border-slate-100">
-          <p className="text-[10px] text-slate-400 text-center leading-relaxed">
-            Utilisateurs de démo :<br />
-            hatim@gadimat.ma / sara@gadimat.ma / youssef@gadimat.ma
-          </p>
-        </div>
       </div>
     </div>
   );

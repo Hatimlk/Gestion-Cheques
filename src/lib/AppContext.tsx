@@ -24,7 +24,7 @@ export interface PartnerListItem {
   balance: number;
 }
 
-export const COMPANY_NAME = "Gadimat SARL";
+export const COMPANY_NAME = "GADIMAT S.A";
 
 const INITIAL_USERS: User[] = [
   { id: 1, name: "Hatim Lk", email: "hatim@gadimat.ma", role: "Administrateur", status: "Actif" },
@@ -53,9 +53,11 @@ interface AppContextType {
   deleteBankAccount: (id: string) => void;
   addCheckbook: (data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => void;
   deleteCheckbook: (id: string) => void;
-  addCheck: (data: { bankAccountId: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number; isReceived: boolean }) => void;
+  addCheck: (data: { bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number }) => void;
+  updateCheck: (id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => void;
   updateCheckStatus: (id: string, status: CheckStatus) => void;
   deleteCheck: (id: string) => void;
+  updateBankAccount: (id: string, data: { bankName: string; rib: string }) => void;
   addPartnerListItem: (data: Omit<PartnerListItem, "id">) => void;
   updatePartnerListItem: (id: number, data: Partial<PartnerListItem>) => void;
   deletePartnerListItem: (id: number) => void;
@@ -97,6 +99,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isAuthenticated = currentUser !== null;
 
+  // Auto-update overdue checks on mount
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setChecks(prev => prev.map(c => {
+      if (c.status === "En Circulation") {
+        const due = new Date(c.dueDate + "T00:00:00");
+        if (due < today) return { ...c, status: "En Retard" as CheckStatus };
+      }
+      return c;
+    }));
+  }, []);
+
   const login = useCallback((email: string): string | null => {
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!user) return "Aucun utilisateur trouvé avec cet email.";
@@ -130,9 +145,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteBankAccount = useCallback((id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce compte bancaire ?")) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce compte bancaire ? Tous les carnets et chèques associés seront supprimés.")) return;
     setBankAccounts(prev => prev.filter(a => a.id !== id));
     setCheckbooks(prev => prev.filter(cb => cb.bankAccountId !== id));
+    setChecks(prev => prev.filter(c => c.bankAccountId !== id));
   }, []);
 
   const addCheckbook = useCallback((data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => {
@@ -158,21 +174,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const deleteCheckbook = useCallback((id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce carnet ?")) return;
+    const checkbook = checkbooks.find(cb => cb.id === id);
     setCheckbooks(prev => prev.filter(cb => cb.id !== id));
-  }, []);
+    if (checkbook) {
+      setBankAccounts(prev => prev.map(a =>
+        a.id === checkbook.bankAccountId
+          ? { ...a, checkbooksCount: Math.max(0, a.checkbooksCount - 1) }
+          : a
+      ));
+    }
+  }, [checkbooks]);
 
   const addCheck = useCallback((data: {
-    bankAccountId: string; type: CheckType; number: string; partnerId: string;
-    partnerName: string; emissionDate: string; dueDate: string; amount: number; isReceived: boolean
+    bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string;
+    partnerName: string; emissionDate: string; dueDate: string; amount: number
   }) => {
     const now = new Date();
-    const due = new Date(data.dueDate);
+    now.setHours(0, 0, 0, 0);
+    const due = new Date(data.dueDate + "T00:00:00");
     let status: CheckStatus = "En Circulation";
     if (due < now) status = "En Retard";
 
     const newCheck: Check = {
       id: `ch_${Date.now()}`,
       bankAccountId: data.bankAccountId,
+      checkbookId: data.checkbookId,
       type: data.type,
       number: data.number,
       partnerId: data.partnerId,
@@ -181,20 +207,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dueDate: data.dueDate,
       amount: data.amount,
       status,
-      isReceived: data.isReceived,
     };
     setChecks(prev => [...prev, newCheck]);
 
-    const cb = checkbooks.find(c => c.bankAccountId === data.bankAccountId);
-    if (cb) {
+    if (data.checkbookId) {
       setCheckbooks(prev => prev.map(c =>
-        c.id === cb.id ? { ...c, remaining: Math.max(0, c.remaining - 1) } : c
+        c.id === data.checkbookId ? { ...c, remaining: Math.max(0, c.remaining - 1) } : c
       ));
     }
-  }, [checkbooks]);
+  }, []);
+
+  const updateCheck = useCallback((id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => {
+    setChecks(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      const updated = { ...c, ...data };
+      if (data.dueDate && (updated.status === "En Circulation" || updated.status === "En Retard")) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const due = new Date(updated.dueDate + "T00:00:00");
+        updated.status = due < today ? "En Retard" : "En Circulation";
+      }
+      return updated;
+    }));
+  }, []);
 
   const updateCheckStatus = useCallback((id: string, status: CheckStatus) => {
     setChecks(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+  }, []);
+
+  const updateBankAccount = useCallback((id: string, data: { bankName: string; rib: string }) => {
+    setBankAccounts(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+    setCheckbooks(prev => prev.map(cb => cb.bankAccountId === id ? { ...cb, bankName: data.bankName } : cb));
   }, []);
 
   const deleteCheck = useCallback((id: string) => {
@@ -246,7 +289,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       currentUser, isAuthenticated, login, logout,
       addBankAccount, deleteBankAccount,
       addCheckbook, deleteCheckbook,
-      addCheck, updateCheckStatus, deleteCheck,
+      addCheck, updateCheck, updateCheckStatus, deleteCheck,
+      updateBankAccount,
       addPartnerListItem, updatePartnerListItem, deletePartnerListItem,
       addUser, updateUser, deleteUser, toggleUserStatus,
     }}>

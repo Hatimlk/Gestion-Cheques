@@ -42,7 +42,7 @@ export function Calendar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setIsNewCheckModalOpen(true)} className="flex items-center gap-2 bg-primary text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:bg-emerald-600 transition shadow-sm border-none cursor-pointer">
+          <button onClick={() => setIsNewCheckModalOpen(true)} className="flex items-center gap-2 bg-primary text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:opacity-90 transition shadow-sm border-none cursor-pointer">
             <Plus className="w-3.5 h-3.5" />
             Nouveau Chèque
           </button>

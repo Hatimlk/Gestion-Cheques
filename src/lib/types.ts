@@ -23,6 +23,7 @@ export type CheckType = "Chèque" | "Effet";
 export type Check = {
   id: string;
   bankAccountId: string;
+  checkbookId?: string;
   type: CheckType;
   number: string;
   partnerId: string;
@@ -32,21 +33,6 @@ export type Check = {
   amount: number;
   status: CheckStatus;
   note?: string;
-  isReceived: boolean;
-};
-
-export type Partner = {
-  id: string;
-  companyId: string;
-  name: string;
-  type: "Émetteur" | "Bénéficiaire";
-  totals: {
-    amount: number;
-    enCirculation: number;
-    enRetard: number;
-    paye: number;
-    annule: number;
-  };
 };
 
 export type Checkbook = {

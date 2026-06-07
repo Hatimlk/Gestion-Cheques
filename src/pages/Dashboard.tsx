@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { useApp } from "@/lib/AppContext";
+import { Check } from "@/lib/types";
 import { formatMAD, cn } from "@/lib/utils";
-import { 
-  Settings, LayoutList, Users, CalendarDays, 
-  BookOpen, BarChart3, Building2, Eye, Pencil, 
+import {
+  Settings, LayoutList, Users, CalendarDays,
+  BookOpen, BarChart3, Building2, Eye, Pencil,
   User, ChevronDown, CheckCircle2, Activity,
-  FileText, Calendar as CalendarIcon, FileCheck
+  FileText, Calendar as CalendarIcon, FileCheck, AlertTriangle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { NewCheckModal } from "@/components/NewCheckModal";
+import { ViewCheckModal } from "@/components/ViewCheckModal";
 
 const SemiCircleGauge = ({ value, total, color, label, count, amount }: any) => {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
@@ -23,19 +27,7 @@ const SemiCircleGauge = ({ value, total, color, label, count, amount }: any) => 
       <div className="h-[130px] w-[180px] flex justify-center mt-2 relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="100%"
-              startAngle={180}
-              endAngle={0}
-              innerRadius={70}
-              outerRadius={85}
-              paddingAngle={0}
-              dataKey="value"
-              stroke="none"
-              cornerRadius={10}
-            >
+            <Pie data={data} cx="50%" cy="100%" startAngle={180} endAngle={0} innerRadius={70} outerRadius={85} paddingAngle={0} dataKey="value" stroke="none" cornerRadius={10}>
               <Cell fill={color} />
               <Cell fill="#F1F5F9" />
             </Pie>
@@ -53,25 +45,72 @@ const SemiCircleGauge = ({ value, total, color, label, count, amount }: any) => 
   );
 };
 
+const TOP10_SORTS = ["Montant ↓", "Montant ↑", "Échéance proche"];
+const PARTNERS_SORTS = ["Top à payer", "Top payé"];
+const CALENDAR_STATUSES = ["Tous", "En Circulation", "En Retard", "Déposé", "Payé", "Annulé"];
+const WEEK_FILTERS = ["Tous", "En Retard", "En Circulation"];
+
 export function Dashboard() {
   const { checks, checkbooks, partnerList, bankAccounts } = useApp();
   const navigate = useNavigate();
 
+  // Dashboard controls state
+  const [top10Sort, setTop10Sort] = useState(0);
+  const [partnersSort, setPartnersSort] = useState(0);
+  const [calendarFilterIdx, setCalendarFilterIdx] = useState(0);
+  const [weekFilterIdx, setWeekFilterIdx] = useState(0);
+  const [checkToView, setCheckToView] = useState<Check | null>(null);
+  const [checkToEdit, setCheckToEdit] = useState<Check | null>(null);
+
+  // Year selector — build list from data
+  const availableYears = Array.from(new Set<number>(checks.map(c => parseInt(c.dueDate.substring(0, 4), 10)))).filter(y => !isNaN(y)).sort((a, b) => b - a);
+  const currentYear = new Date().getFullYear();
+  const defaultYear = availableYears.includes(currentYear) ? currentYear : (availableYears[0] ?? currentYear);
+  const [selectedYear, setSelectedYear] = useState(defaultYear);
+
+  const cycleYear = () => {
+    const idx = availableYears.indexOf(selectedYear);
+    setSelectedYear(availableYears[(idx + 1) % availableYears.length] ?? selectedYear);
+  };
+
+  // Status totals
   const statusCounts = { "En Circulation": 0, "En Retard": 0, "Payé": 0, "Annulé": 0 };
   let enCirculationAmount = 0, enRetardAmount = 0, payeAmount = 0, annuleAmount = 0;
-  
   checks.forEach(c => {
     if (c.status === "En Circulation") { statusCounts["En Circulation"]++; enCirculationAmount += c.amount; }
     if (c.status === "En Retard") { statusCounts["En Retard"]++; enRetardAmount += c.amount; }
     if (c.status === "Payé") { statusCounts["Payé"]++; payeAmount += c.amount; }
     if (c.status === "Annulé") { statusCounts["Annulé"]++; annuleAmount += c.amount; }
   });
-
   const totalAmount = enCirculationAmount + enRetardAmount + payeAmount + annuleAmount;
   const totalCount = Object.values(statusCounts).reduce((a, b) => a + b, 0);
 
-  const top10Checks = [...checks].filter(c => !c.isReceived).sort((a,b) => b.amount - a.amount).slice(0, 5);
-  const topPartners = [...partnerList].sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)).slice(0, 4);
+  const emittedChecks = checks;
+  const totalEmittedAmount = emittedChecks.reduce((s, c) => s + c.amount, 0);
+
+  // Partner helpers (defined before topPartners so they can be used in sort)
+  const getPartnerPaid = (name: string) =>
+    emittedChecks.filter(c => c.partnerName === name && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
+  const getPartnerUnpaid = (name: string) =>
+    emittedChecks.filter(c => c.partnerName === name && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
+
+  // Top 10 checks with sort
+  const top10Checks = [...emittedChecks]
+    .sort((a, b) => {
+      if (TOP10_SORTS[top10Sort] === "Montant ↑") return a.amount - b.amount;
+      if (TOP10_SORTS[top10Sort] === "Échéance proche") return a.dueDate.localeCompare(b.dueDate);
+      return b.amount - a.amount;
+    })
+    .slice(0, 5);
+
+  // Top partners with sort
+  const topPartners = [...partnerList]
+    .sort((a, b) =>
+      PARTNERS_SORTS[partnersSort] === "Top payé"
+        ? getPartnerPaid(b.name) - getPartnerPaid(a.name)
+        : Math.abs(b.balance) - Math.abs(a.balance)
+    )
+    .slice(0, 4);
 
   const getDaysInfo = (dueDate: string) => {
     const due = new Date(dueDate + 'T00:00:00');
@@ -80,26 +119,16 @@ export function Dashboard() {
     const diff = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return {
       label: diff === 0 ? "Auj." : diff < 0 ? `${Math.abs(diff)}j` : `+${diff}`,
-      color: diff < 0 ? 'text-red-500 bg-red-50' : diff <= 7 ? 'text-orange-500 bg-orange-50' : 'text-emerald-500 bg-emerald-50'
+      color: diff < 0 ? 'text-red-500 bg-red-50' : diff <= 7 ? 'text-orange-500 bg-orange-50' : 'text-primary bg-primary/10'
     };
   };
 
-  const emittedChecks = checks.filter(c => !c.isReceived);
-  const receivedChecks = checks.filter(c => c.isReceived);
-  const totalEmittedAmount = emittedChecks.reduce((s, c) => s + c.amount, 0);
-  const totalReceivedAmount = receivedChecks.reduce((s, c) => s + c.amount, 0);
-
   const lowCheckbooks = checkbooks.filter(cb => cb.remaining < 10).sort((a, b) => a.remaining - b.remaining);
 
-  const getPartnerPaid = (name: string) =>
-    emittedChecks.filter(c => c.partnerName === name && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
-  const getPartnerUnpaid = (name: string) =>
-    emittedChecks.filter(c => c.partnerName === name && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
-
+  // Monthly stats filtered by selected year
   const monthlyStats = (() => {
     const months: Record<string, { total: number; count: number }> = {};
-    const currentYear = new Date().getFullYear();
-    emittedChecks.filter(c => c.dueDate.startsWith(String(currentYear))).forEach(c => {
+    emittedChecks.filter(c => c.dueDate.startsWith(String(selectedYear))).forEach(c => {
       const month = c.dueDate.substring(5, 7);
       if (!months[month]) months[month] = { total: 0, count: 0 };
       months[month].total += c.amount;
@@ -110,22 +139,24 @@ export function Dashboard() {
 
   const monthNames = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
+  // Weekly checks with filter
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
   weekEnd.setHours(23, 59, 59, 999);
   const weekChecks = emittedChecks.filter(c => {
     const d = new Date(c.dueDate + 'T00:00:00');
-    return d >= today && d <= weekEnd;
+    const inRange = d >= today && d <= weekEnd;
+    const matchFilter = WEEK_FILTERS[weekFilterIdx] === "Tous" || c.status === WEEK_FILTERS[weekFilterIdx];
+    return inRange && matchFilter;
   }).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 
-  const getNext7Days = () => {
-    return Array.from({length: 7}).map((_, i) => {
-       const d = new Date();
-       d.setDate(d.getDate() + i);
-       return d;
-    });
-  };
+  const getNext7Days = () => Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
   const weekDays = getNext7Days();
 
   // Calendar logic
@@ -135,15 +166,20 @@ export function Dashboard() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-  
-  const calendarGrid = [];
+
+  const calendarGrid: (number | null)[] = [];
   for (let i = 0; i < startOffset; i++) calendarGrid.push(null);
   for (let i = 1; i <= daysInMonth; i++) calendarGrid.push(i);
-  while(calendarGrid.length % 7 !== 0) calendarGrid.push(null);
+  while (calendarGrid.length % 7 !== 0) calendarGrid.push(null);
 
   const calendarDaysNames = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+  const calendarFilter = CALENDAR_STATUSES[calendarFilterIdx];
 
-  const checksByDay = emittedChecks.reduce<Record<number, typeof emittedChecks>>((acc, c) => {
+  const filteredForCalendar = calendarFilter === "Tous"
+    ? emittedChecks
+    : emittedChecks.filter(c => c.status === calendarFilter);
+
+  const checksByDay = filteredForCalendar.reduce<Record<number, typeof emittedChecks>>((acc, c) => {
     const d = new Date(c.dueDate + 'T00:00:00');
     if (d.getFullYear() === year && d.getMonth() === month) {
       const day = d.getDate();
@@ -155,26 +191,14 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8 max-w-[1400px] mx-auto pb-12">
-      
+
       {/* Top Cards Row */}
       <div className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          <SemiCircleGauge 
-            value={enCirculationAmount} total={totalAmount} count={statusCounts["En Circulation"]} 
-            amount={enCirculationAmount} label="En Circulation" color="#F59E0B" 
-          />
-          <SemiCircleGauge 
-            value={enRetardAmount} total={totalAmount} count={statusCounts["En Retard"]} 
-            amount={enRetardAmount} label="En Retard" color="#FF5B37" 
-          />
-          <SemiCircleGauge 
-            value={payeAmount} total={totalAmount} count={statusCounts["Payé"]} 
-            amount={payeAmount} label="Payé" color="#22C55E" 
-          />
-          <SemiCircleGauge 
-            value={annuleAmount} total={totalAmount} count={statusCounts["Annulé"]} 
-            amount={annuleAmount} label="Annulé" color="#CBD5E1" 
-          />
+          <SemiCircleGauge value={enCirculationAmount} total={totalAmount} count={statusCounts["En Circulation"]} amount={enCirculationAmount} label="En Circulation" color="#F59E0B" />
+          <SemiCircleGauge value={enRetardAmount} total={totalAmount} count={statusCounts["En Retard"]} amount={enRetardAmount} label="En Retard" color="#FF5B37" />
+          <SemiCircleGauge value={payeAmount} total={totalAmount} count={statusCounts["Payé"]} amount={payeAmount} label="Payé" color="#22C55E" />
+          <SemiCircleGauge value={annuleAmount} total={totalAmount} count={statusCounts["Annulé"]} amount={annuleAmount} label="Annulé" color="#CBD5E1" />
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-full border border-slate-200 text-[11px] font-semibold text-slate-500 shadow-sm">
@@ -184,7 +208,7 @@ export function Dashboard() {
               <span className="text-[#1E293B] font-bold">{formatMAD(totalAmount).replace('MAD', 'DH')}</span>
             </div>
           </div>
-          <button className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center border-none shadow-sm cursor-pointer hover:bg-slate-700">
+          <button onClick={() => navigate("/roles")} title="Paramètres" className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center border-none shadow-sm cursor-pointer hover:bg-slate-700">
             <Settings className="w-4 h-4" />
           </button>
         </div>
@@ -192,7 +216,7 @@ export function Dashboard() {
 
       {/* Middle Widgets Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Column 1 */}
         <div className="space-y-6">
           {/* Top 10 valeurs */}
@@ -201,9 +225,12 @@ export function Dashboard() {
               <LayoutList className="w-4 h-4 text-slate-400" /> Top 10 valeurs
             </div>
             <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
-              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer">
-                Trier par: Montant le plus élevé <ChevronDown className="w-3 h-3" />
-              </div>
+              <button
+                onClick={() => setTop10Sort(i => (i + 1) % TOP10_SORTS.length)}
+                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer hover:bg-slate-100"
+              >
+                Trier par: {TOP10_SORTS[top10Sort]} <ChevronDown className="w-3 h-3" />
+              </button>
               <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-red-400"></span> En retard
               </div>
@@ -211,43 +238,41 @@ export function Dashboard() {
                 <span className="w-2 h-2 rounded-full bg-orange-400"></span> Proche
               </div>
               <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 whitespace-nowrap">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Loin
+                <span className="w-2 h-2 rounded-full bg-primary"></span> Loin
               </div>
             </div>
             <div className="flex-1 space-y-3">
               {top10Checks.map(check => (
                 <div key={check.id} className="flex justify-between items-center py-2.5 border-b border-slate-50 last:border-0">
-                   <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className={cn("text-[9px] px-1.5 py-0.5 rounded-[4px] font-bold text-white", check.type === 'Effet' ? 'bg-[#FF9800]' : 'bg-[#1E293B]')}>{check.type === 'Effet' ? 'LCN' : 'CHQ'}</span>
-                        <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded-full", 
-                          check.status === 'En Retard' ? 'bg-red-50 text-red-600' :
-                          check.status === 'En Circulation' ? 'bg-cyan-50 text-cyan-600' :
-                          check.status === 'Payé' ? 'bg-green-50 text-green-600' :
-                          'bg-slate-100 text-slate-600'
-                        )}>
-                          {check.status}
-                        </span>
-                        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-sm", getDaysInfo(check.dueDate).color)}>
-                          {getDaysInfo(check.dueDate).label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase">
-                        <User className="w-3 h-3 text-slate-400" /> {check.partnerName}
-                      </div>
-                   </div>
-                   <div className="flex flex-col items-end gap-1.5">
-                      <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(check.amount).replace('MAD', 'DH')}</div>
-                      <div className="flex gap-2">
-                        <Eye className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" />
-                        <Pencil className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" />
-                      </div>
-                   </div>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded-[4px] font-bold text-white", check.type === 'Effet' ? 'bg-[#FF9800]' : 'bg-[#1E293B]')}>{check.type === 'Effet' ? 'LCN' : 'CHQ'}</span>
+                      <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded-full",
+                        check.status === 'En Retard' ? 'bg-red-50 text-red-600' :
+                        check.status === 'En Circulation' ? 'bg-cyan-50 text-cyan-600' :
+                        check.status === 'Payé' ? 'bg-green-50 text-green-600' :
+                        'bg-slate-100 text-slate-600'
+                      )}>{check.status}</span>
+                      <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-sm", getDaysInfo(check.dueDate).color)}>
+                        {getDaysInfo(check.dueDate).label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase">
+                      <User className="w-3 h-3 text-slate-400" /> {check.partnerName}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(check.amount).replace('MAD', 'DH')}</div>
+                    <div className="flex gap-2">
+                      <Eye onClick={() => setCheckToView(check)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" title="Voir" />
+                      <Pencil onClick={() => setCheckToEdit(check)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-blue-600" title="Modifier" />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
-            <button className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
-              Plus de résultats
+            <button onClick={() => navigate("/emis")} className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
+              Voir tous les chèques
             </button>
           </div>
 
@@ -280,25 +305,28 @@ export function Dashboard() {
                 </button>
               </div>
             )}
-            <button className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
-              Plus de résultats
+            <button onClick={() => navigate("/carnets")} className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
+              Gérer les carnets
             </button>
           </div>
         </div>
 
         {/* Column 2 */}
         <div className="space-y-6">
-          {/* Top bénéficiaires à payer */}
+          {/* Top bénéficiaires */}
           <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex flex-col min-h-[400px]">
             <div className="flex items-center gap-2 font-bold text-[14px] text-slate-800 mb-4">
-              <Users className="w-4 h-4 text-slate-400" /> Top bénéficiaires à payer
+              <Users className="w-4 h-4 text-slate-400" /> Top bénéficiaires
             </div>
             <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
-              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer">
-                Trier par: Top client à payer <ChevronDown className="w-3 h-3" />
-              </div>
+              <button
+                onClick={() => setPartnersSort(i => (i + 1) % PARTNERS_SORTS.length)}
+                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer hover:bg-slate-100"
+              >
+                Trier par: {PARTNERS_SORTS[partnersSort]} <ChevronDown className="w-3 h-3" />
+              </button>
               <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 whitespace-nowrap">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Valeurs payées
+                <span className="w-2 h-2 rounded-full bg-primary"></span> Valeurs payées
               </div>
               <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-orange-400"></span> Valeurs à payer
@@ -307,25 +335,25 @@ export function Dashboard() {
             <div className="flex-1 space-y-4">
               {topPartners.map(partner => (
                 <div key={partner.id} className="flex flex-col gap-2.5 py-2 border-b border-slate-50 last:border-0">
-                   <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase">
-                        <User className="w-3.5 h-3.5 text-slate-400" /> {partner.name}
-                      </div>
-                      <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(Math.abs(partner.balance)).replace('MAD', 'DH')}</div>
-                   </div>
-                    <div className="flex justify-between items-center">
-                       <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                         <CheckCircle2 className="w-3 h-3" /> {formatMAD(getPartnerPaid(partner.name)).replace('MAD', 'DH')}
-                       </div>
-                       <div className="flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                         <Activity className="w-3 h-3" /> {formatMAD(getPartnerUnpaid(partner.name)).replace('MAD', 'DH')}
-                       </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase">
+                      <User className="w-3.5 h-3.5 text-slate-400" /> {partner.name}
                     </div>
+                    <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(Math.abs(partner.balance)).replace('MAD', 'DH')}</div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3 h-3" /> {formatMAD(getPartnerPaid(partner.name)).replace('MAD', 'DH')}
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                      <Activity className="w-3 h-3" /> {formatMAD(getPartnerUnpaid(partner.name)).replace('MAD', 'DH')}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
-            <button className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
-              Plus de résultats
+            <button onClick={() => navigate("/partenaires")} className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
+              Gérer les partenaires
             </button>
           </div>
 
@@ -335,11 +363,14 @@ export function Dashboard() {
               <BarChart3 className="w-4 h-4 text-slate-400" /> Statistique annuel
             </div>
             <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
+              <button
+                onClick={cycleYear}
+                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 cursor-pointer whitespace-nowrap hover:bg-slate-100"
+              >
+                {selectedYear} <ChevronDown className="w-3 h-3" />
+              </button>
               <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 cursor-pointer whitespace-nowrap">
-                2026 <ChevronDown className="w-3 h-3" />
-              </div>
-              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 cursor-pointer whitespace-nowrap">
-                Total des montants à payer par mois <ChevronDown className="w-3 h-3" />
+                Montants à payer par mois
               </div>
             </div>
             <div className="flex-1 flex flex-col justify-center space-y-1">
@@ -350,22 +381,27 @@ export function Dashboard() {
                   <div key={key} className="flex justify-between items-center py-2 text-[11px]">
                     <span className="font-bold text-slate-600">{name}</span>
                     <div className="flex items-center gap-3">
-                       <span className="font-bold text-slate-800">{formatMAD(stat.total).replace('MAD', 'DH')}</span>
-                       <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{stat.count}</span>
+                      <span className="font-bold text-slate-800">{formatMAD(stat.total).replace('MAD', 'DH')}</span>
+                      <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{stat.count}</span>
                     </div>
                   </div>
                 ) : null;
               })}
-              <div className="flex justify-between items-center py-2.5 text-[11px] bg-slate-50 px-3 -mx-3 rounded-[8px] mt-1">
-                <span className="font-bold text-[#1E293B]">Total</span>
-                <div className="flex items-center gap-3">
-                   <span className="font-bold text-[#1E293B]">{formatMAD(Object.values(monthlyStats).reduce((s, m) => s + m.total, 0)).replace('MAD', 'DH')}</span>
-                   <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{Object.values(monthlyStats).reduce((s, m) => s + m.count, 0)}</span>
+              {Object.keys(monthlyStats).length === 0 && (
+                <div className="text-center text-[12px] text-slate-400 py-4">Aucune donnée pour {selectedYear}</div>
+              )}
+              {Object.keys(monthlyStats).length > 0 && (
+                <div className="flex justify-between items-center py-2.5 text-[11px] bg-slate-50 px-3 -mx-3 rounded-[8px] mt-1">
+                  <span className="font-bold text-[#1E293B]">Total</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-[#1E293B]">{formatMAD(Object.values(monthlyStats).reduce((s, m) => s + m.total, 0)).replace('MAD', 'DH')}</span>
+                    <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{Object.values(monthlyStats).reduce((s, m) => s + m.count, 0)}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-            <button className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
-              Plus de résultats
+            <button onClick={() => navigate("/emis")} className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
+              Voir tous les chèques
             </button>
           </div>
         </div>
@@ -375,12 +411,17 @@ export function Dashboard() {
           {/* À payer cette semaine */}
           <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex flex-col min-h-[400px]">
             <div className="flex items-center gap-2 font-bold text-[14px] text-slate-800 mb-4">
-              <CalendarIcon className="w-4 h-4 text-slate-400" /> À payer cette semaine
+              <CalendarIcon className="w-4 h-4 text-slate-400" /> À échéance cette semaine
             </div>
             <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
-              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer">
-                Non Payé <ChevronDown className="w-3 h-3" />
-              </div>
+              <button
+                onClick={() => setWeekFilterIdx(i => (i + 1) % WEEK_FILTERS.length)}
+                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer hover:bg-slate-100"
+              >
+                {WEEK_FILTERS[weekFilterIdx] === "Tous" ? null : <AlertTriangle className="w-3 h-3 text-red-500" />}
+                {WEEK_FILTERS[weekFilterIdx] === "Tous" ? "Tous statuts" : WEEK_FILTERS[weekFilterIdx]}
+                <ChevronDown className="w-3 h-3" />
+              </button>
               <div className="flex items-center gap-1 bg-cyan-50 text-cyan-700 px-2 py-1 rounded-[6px] text-[10px] font-bold whitespace-nowrap">
                 Total: {weekChecks.length}
               </div>
@@ -392,7 +433,10 @@ export function Dashboard() {
               {weekDays.map((date, idx) => {
                 const dateStr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
                 const dateKey = date.toISOString().split('T')[0];
-                const dayChecks = emittedChecks.filter(c => c.dueDate === dateKey);
+                const dayChecks = emittedChecks.filter(c => {
+                  const matchFilter = WEEK_FILTERS[weekFilterIdx] === "Tous" || c.status === WEEK_FILTERS[weekFilterIdx];
+                  return c.dueDate === dateKey && matchFilter;
+                });
                 return (
                   <div key={idx} className="flex flex-col gap-2 pb-3 border-b border-slate-50 last:border-0 last:pb-0">
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700">
@@ -400,29 +444,27 @@ export function Dashboard() {
                     </div>
                     {dayChecks.length > 0 ? dayChecks.map(c => (
                       <div key={c.id} className="flex justify-between items-center pl-5">
-                         <div className="flex items-center gap-2">
-                           <span className={cn("text-[9px] px-1.5 py-0.5 rounded-[4px] font-bold text-white", c.type === 'Effet' ? 'bg-[#FF9800]' : 'bg-[#1E293B]')}>{c.type === 'Effet' ? 'LCN' : 'CHQ'}</span>
-                           <span className="text-[10px] font-bold text-slate-800">{c.partnerName}</span>
-                         </div>
-                         <div className="flex items-center gap-3">
-                           <span className="font-bold text-[11px] text-slate-800">{formatMAD(c.amount).replace('MAD', 'DH')}</span>
-                           <div className="flex gap-1.5">
-                             <Eye className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" />
-                             <Pencil className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" />
-                           </div>
-                         </div>
+                        <div className="flex items-center gap-2">
+                          <span className={cn("text-[9px] px-1.5 py-0.5 rounded-[4px] font-bold text-white", c.type === 'Effet' ? 'bg-[#FF9800]' : 'bg-[#1E293B]')}>{c.type === 'Effet' ? 'LCN' : 'CHQ'}</span>
+                          <span className="text-[10px] font-bold text-slate-800">{c.partnerName}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[11px] text-slate-800">{formatMAD(c.amount).replace('MAD', 'DH')}</span>
+                          <div className="flex gap-1.5">
+                            <Eye onClick={() => setCheckToView(c)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" title="Voir" />
+                            <Pencil onClick={() => setCheckToEdit(c)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-blue-600" title="Modifier" />
+                          </div>
+                        </div>
                       </div>
                     )) : (
-                      <div className="text-[10px] text-slate-400 pl-5">
-                        Aucun chèque pour ce jour.
-                      </div>
+                      <div className="text-[10px] text-slate-400 pl-5">Aucun chèque pour ce jour.</div>
                     )}
                   </div>
                 );
               })}
             </div>
-            <button className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
-              Plus de résultats
+            <button onClick={() => navigate("/calendrier")} className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
+              Voir le calendrier
             </button>
           </div>
 
@@ -440,8 +482,8 @@ export function Dashboard() {
                   <div key={acc.id} className="flex justify-between items-center py-2 text-[11px]">
                     <span className="font-bold text-slate-800 uppercase">{acc.bankName}</span>
                     <div className="flex items-center gap-3">
-                       <span className="font-bold text-slate-800">{formatMAD(accTotal).replace('MAD', 'DH')}</span>
-                       <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{accCount}</span>
+                      <span className="font-bold text-slate-800">{formatMAD(accTotal).replace('MAD', 'DH')}</span>
+                      <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{accCount}</span>
                     </div>
                   </div>
                 ) : null;
@@ -449,8 +491,8 @@ export function Dashboard() {
               <div className="flex justify-between items-center py-2.5 text-[11px] bg-slate-50 px-3 -mx-3 rounded-[8px] mt-1">
                 <span className="font-bold text-[#1E293B]">Total</span>
                 <div className="flex items-center gap-3">
-                   <span className="font-bold text-[#1E293B]">{formatMAD(totalEmittedAmount).replace('MAD', 'DH')}</span>
-                   <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{emittedChecks.length}</span>
+                  <span className="font-bold text-[#1E293B]">{formatMAD(totalEmittedAmount).replace('MAD', 'DH')}</span>
+                  <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-[4px] font-bold">{emittedChecks.length}</span>
                 </div>
               </div>
             </div>
@@ -458,27 +500,22 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom section (Calendar controls) */}
+      {/* Calendar section */}
       <div className="flex items-center justify-between mt-8 mb-4">
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 text-[11px] font-semibold text-slate-500 shadow-sm">
-          <span>Valeurs reçues</span>
-          <div className="flex items-center gap-1.5">
-            <span className="bg-slate-100 text-slate-600 px-1.5 rounded-[4px]">{receivedChecks.length}</span>
-            <span className="text-[#1E293B] font-bold">{formatMAD(totalReceivedAmount).replace('MAD', 'DH')}</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-1 bg-white px-4 py-2 rounded-[8px] border border-slate-200 text-[12px] font-medium text-slate-600 cursor-pointer shadow-sm">
-          En Circulation <ChevronDown className="w-4 h-4 ml-2" />
-        </div>
-
-        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 text-[11px] font-semibold text-slate-500 shadow-sm">
-          <span>Valeurs Émis</span>
+          <span>Total Valeurs</span>
           <div className="flex items-center gap-1.5">
             <span className="bg-slate-100 text-slate-600 px-1.5 rounded-[4px]">{emittedChecks.length}</span>
             <span className="text-[#1E293B] font-bold">{formatMAD(totalEmittedAmount).replace('MAD', 'DH')}</span>
           </div>
         </div>
+
+        <button
+          onClick={() => setCalendarFilterIdx(i => (i + 1) % CALENDAR_STATUSES.length)}
+          className="flex items-center gap-1 bg-white px-4 py-2 rounded-[8px] border border-slate-200 text-[12px] font-medium text-slate-600 cursor-pointer shadow-sm hover:bg-slate-50"
+        >
+          {calendarFilter} <ChevronDown className="w-4 h-4 ml-2" />
+        </button>
       </div>
 
       {/* Calendar View */}
@@ -492,15 +529,13 @@ export function Dashboard() {
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> En Retard</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-400"></span> Déposé</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-600"></span> Impayé</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Payé</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary"></span> Payé</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-400"></span> Annulé</span>
         </div>
-        
+
         <div className="grid grid-cols-7 border-b border-slate-100 bg-[#F8FAFC]">
           {calendarDaysNames.map(d => (
-            <div key={d} className="py-2 text-center text-[11px] font-bold text-slate-500 border-r border-slate-100 last:border-0">
-              {d}
-            </div>
+            <div key={d} className="py-2 text-center text-[11px] font-bold text-slate-500 border-r border-slate-100 last:border-0">{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 bg-white">
@@ -508,30 +543,35 @@ export function Dashboard() {
             const dayChecks = day ? checksByDay[day] || [] : [];
             const isToday = day === today.getDate();
             return (
-            <div key={idx} className="min-h-[100px] border-r border-b border-slate-100 p-2 relative group hover:bg-slate-50 transition-colors">
-              {day && (
-                <>
-                  <span className={cn("absolute top-2 right-2 text-[11px] font-semibold", isToday ? "w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center" : "text-slate-400")}>
-                    {day}
-                  </span>
-                  
-                  {dayChecks.slice(0, 3).map(c => (
-                    <div key={c.id} className="mt-5 w-full bg-white border border-red-500 rounded-[6px] shadow-sm overflow-hidden border-l-[3px]">
-                      <div className="px-1.5 py-1 text-[8px] font-bold text-red-600 border-b border-slate-100 uppercase">ÉMIS</div>
-                      <div className="px-1.5 py-1 flex items-center justify-between bg-orange-50">
-                        <span className={cn("text-white px-1 rounded-[2px] text-[8px] font-bold", c.type === 'Effet' ? 'bg-[#FF9800]' : 'bg-black')}>{c.type === 'Effet' ? 'LCN' : 'CHQ'}</span>
-                        <span className="text-[9px] font-bold text-slate-700">{formatMAD(c.amount).replace('MAD', 'dh')}</span>
+              <div key={idx} className="min-h-[100px] border-r border-b border-slate-100 p-2 relative group hover:bg-slate-50 transition-colors">
+                {day && (
+                  <>
+                    <span className={cn("absolute top-2 right-2 text-[11px] font-semibold", isToday ? "w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center" : "text-slate-400")}>
+                      {day}
+                    </span>
+                    {dayChecks.slice(0, 3).map(c => (
+                      <div
+                        key={c.id}
+                        onClick={() => setCheckToView(c)}
+                        className="mt-5 w-full bg-white border border-red-500 rounded-[6px] shadow-sm overflow-hidden border-l-[3px] cursor-pointer hover:shadow-md transition-shadow"
+                      >
+                        <div className="px-1.5 py-1 text-[8px] font-bold text-red-600 border-b border-slate-100 uppercase">ÉMIS</div>
+                        <div className="px-1.5 py-1 flex items-center justify-between bg-orange-50">
+                          <span className={cn("text-white px-1 rounded-[2px] text-[8px] font-bold", c.type === 'Effet' ? 'bg-[#FF9800]' : 'bg-black')}>{c.type === 'Effet' ? 'LCN' : 'CHQ'}</span>
+                          <span className="text-[9px] font-bold text-slate-700">{formatMAD(c.amount).replace('MAD', 'dh')}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          );
+                    ))}
+                  </>
+                )}
+              </div>
+            );
           })}
         </div>
       </div>
 
+      <ViewCheckModal check={checkToView} onClose={() => setCheckToView(null)} />
+      <NewCheckModal isOpen={!!checkToEdit} onClose={() => setCheckToEdit(null)} editCheck={checkToEdit} />
     </div>
   );
 }
