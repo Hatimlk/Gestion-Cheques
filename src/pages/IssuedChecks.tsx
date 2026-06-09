@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { formatMAD, cn, getBankLogo } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
 import { Check, CheckStatus } from "@/lib/types";
@@ -82,6 +82,8 @@ export function IssuedChecks() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [selectedCheckIds, setSelectedCheckIds] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string>("Tous");
 
   const emittedChecks = checks;
 
@@ -92,9 +94,10 @@ export function IssuedChecks() {
 
   const filteredChecks = emittedChecks.filter(c => {
     const matchesStatus = activeStatus === "Tous" || c.status === activeStatus;
+    const matchesType = typeFilter === "Tous" || c.type === typeFilter;
     const matchesSearch = c.partnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           c.number.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesType && matchesSearch;
   }).sort((a, b) => {
     if (sortBy === "status") {
       const weight: Record<string, number> = { "En Retard": 0, "En Circulation": 1, "Déposé": 2, "Impayé": 3, "Payé": 4, "Annulé": 5 };
@@ -135,6 +138,136 @@ export function IssuedChecks() {
     if (check.status === "En Circulation" || check.status === "En Retard") {
       updateCheckStatus(check.id, "Déposé");
     }
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedCheckIds(filteredChecks.map(c => c.id));
+    } else {
+      setSelectedCheckIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedCheckIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const getChecksToExport = () => {
+    if (selectedCheckIds.length > 0) {
+      return filteredChecks.filter(c => selectedCheckIds.includes(c.id));
+    }
+    return filteredChecks;
+  };
+
+  const handleExportCSV = (separator = ',') => {
+    const checksToExport = getChecksToExport();
+    const headers = ["Compte Bancaire", "Type", "Numéro", "Bénéficiaire", "Date d'Émission", "Date d'Échéance", "Montant", "Facture", "Statut", "Note"];
+    
+    const rows = checksToExport.map(check => {
+      const account = bankAccounts.find(a => a.id === check.bankAccountId);
+      const bankName = account?.bankName || "Inconnu";
+      
+      return [
+        bankName,
+        check.type,
+        check.number,
+        check.partnerName,
+        check.emissionDate,
+        check.dueDate,
+        check.amount,
+        check.facture || "",
+        check.status,
+        check.note || ""
+      ].map(value => `"${String(value).replace(/"/g, '""')}"`).join(separator);
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(separator), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `export_cheques_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsExportMenuOpen(false);
+  };
+
+  const handleExportExcel = () => {
+    // For french locales, Excel uses semicolon as delimiter by default for CSV
+    handleExportCSV(';');
+  };
+
+  const handleExportPDF = () => {
+    const checksToExport = getChecksToExport();
+    const printWindow = window.open('', '', 'width=1000,height=800');
+    if (!printWindow) return;
+
+    const tableRows = checksToExport.map(check => {
+      const account = bankAccounts.find(a => a.id === check.bankAccountId);
+      const bankName = account?.bankName || "Inconnu";
+      return `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${bankName}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${check.type} / ${check.number}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${check.partnerName}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${check.emissionDate}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${check.dueDate}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${formatMAD(check.amount)}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${check.status}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Export Chèques</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            th { border: 1px solid #ddd; padding: 8px; background-color: #f8f9fa; text-align: left; }
+            h1 { font-size: 18px; color: #333; }
+          </style>
+        </head>
+        <body>
+          <h1>Liste des Chèques/Effets Émis</h1>
+          <p>Généré le: ${new Date().toLocaleDateString('fr-FR')}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Compte Bancaire</th>
+                <th>Type / Numéro</th>
+                <th>Bénéficiaire</th>
+                <th>Date d'Émission</th>
+                <th>Date d'Échéance</th>
+                <th>Montant</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              setTimeout(function() { 
+                window.print(); 
+                setTimeout(function() { window.close(); }, 500);
+              }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setIsExportMenuOpen(false);
   };
 
   return (
@@ -243,12 +376,7 @@ export function IssuedChecks() {
         {/* Filters */}
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
           <div className="flex flex-wrap items-center gap-3 flex-1">
-            <div className="relative">
-              <select className="appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-[6px] text-[12px] font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent min-w-[140px]">
-                <option value="">Société</option>
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+
 
             <DatePicker 
               label="Date de début" 
@@ -261,6 +389,20 @@ export function IssuedChecks() {
               value={endDate} 
               onChange={setEndDate} 
             />
+
+            <div className="relative flex-1 max-w-[150px]">
+              <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-slate-400 font-medium">Type</span>
+              <select 
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-[6px] text-[12px] font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent"
+              >
+                <option value="Tous">Tous les types</option>
+                <option value="Chèque">Chèque</option>
+                <option value="Effet">Effet</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
             <div className="relative flex-1 max-w-[200px]">
               <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-slate-400 font-medium">Trier par</span>
@@ -300,15 +442,15 @@ export function IssuedChecks() {
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setIsExportMenuOpen(false)}></div>
                   <div className="absolute right-0 top-full mt-2 w-[200px] bg-white rounded-[12px] shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-slate-100 py-2 z-40 flex flex-col gap-1">
-                    <button className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors text-left border-none bg-transparent cursor-pointer">
+                    <button onClick={handleExportPDF} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors text-left border-none bg-transparent cursor-pointer">
                       <PdfIcon />
                       <span className="text-[12px] font-bold text-slate-700">Exporter en PDF</span>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors text-left border-none bg-transparent cursor-pointer">
+                    <button onClick={() => handleExportCSV(',')} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors text-left border-none bg-transparent cursor-pointer">
                       <CsvIcon />
                       <span className="text-[12px] font-bold text-slate-700">Exporter en CSV</span>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors text-left border-none bg-transparent cursor-pointer">
+                    <button onClick={handleExportExcel} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors text-left border-none bg-transparent cursor-pointer">
                       <ExcelIcon />
                       <span className="text-[12px] font-bold text-slate-700">Exporter pour EXCEL</span>
                     </button>
@@ -325,7 +467,12 @@ export function IssuedChecks() {
             <thead className="bg-[#F8FAFC] border-y border-slate-200">
               <tr>
                 <th className="px-6 py-4 w-10">
-                  <input type="checkbox" className="rounded-[4px] border-slate-300 w-4 h-4 cursor-pointer accent-primary" />
+                  <input 
+                    type="checkbox" 
+                    checked={filteredChecks.length > 0 && filteredChecks.every(c => selectedCheckIds.includes(c.id))}
+                    onChange={handleSelectAll}
+                    className="rounded-[4px] border-slate-300 w-4 h-4 cursor-pointer accent-primary" 
+                  />
                 </th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Action</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Compte Bancaire</th>
@@ -333,7 +480,7 @@ export function IssuedChecks() {
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Bénéficiaire/Date d'Émission</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Date d'Échéance</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Montant/Facture</th>
-                <th className="px-4 py-4 w-32"></th>
+                <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Statut/Note</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -347,7 +494,12 @@ export function IssuedChecks() {
                 return (
                   <tr key={check.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
-                      <input type="checkbox" className="rounded-[4px] border-slate-300 w-4 h-4 cursor-pointer accent-primary" />
+                      <input 
+                        type="checkbox" 
+                        checked={selectedCheckIds.includes(check.id)}
+                        onChange={() => handleSelectOne(check.id)}
+                        className="rounded-[4px] border-slate-300 w-4 h-4 cursor-pointer accent-primary" 
+                      />
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -447,20 +599,27 @@ export function IssuedChecks() {
                       <div className="flex flex-col items-start gap-1">
                         <span className="font-bold text-slate-800 text-[12px]">{formatMAD(check.amount)}</span>
                         <div className="flex items-center gap-1 text-slate-400 text-[10px] font-medium cursor-pointer">
-                          service <ChevronDown className="w-3 h-3" />
+                          {check.facture ? `Facture : ${check.facture}` : 'service'} <ChevronDown className="w-3 h-3" />
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-right">
-                      <span className={cn("px-3 py-1.5 rounded-full text-[11px] font-bold inline-block min-w-[90px] text-center",
-                        check.status === 'En Retard' ? 'bg-red-50 text-red-600' :
-                        check.status === 'En Circulation' ? 'bg-orange-50 text-orange-600' :
-                        check.status === 'Payé' ? 'bg-green-50 text-green-600' :
-                        check.status === 'Déposé' ? 'bg-blue-50 text-blue-600' :
-                        'bg-slate-100 text-slate-600'
-                      )}>
-                        {check.status}
-                      </span>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col items-end sm:items-start gap-1">
+                        <span className={cn("px-3 py-1.5 rounded-full text-[11px] font-bold inline-block min-w-[90px] text-center",
+                          check.status === 'En Retard' ? 'bg-red-50 text-red-600' :
+                          check.status === 'En Circulation' ? 'bg-orange-50 text-orange-600' :
+                          check.status === 'Payé' ? 'bg-green-50 text-green-600' :
+                          check.status === 'Déposé' ? 'bg-blue-50 text-blue-600' :
+                          'bg-slate-100 text-slate-600'
+                        )}>
+                          {check.status}
+                        </span>
+                        {check.note && (
+                          <span className="text-slate-400 font-medium text-[10px] truncate max-w-[120px]" title={check.note}>
+                            {check.note}
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

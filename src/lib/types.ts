@@ -33,6 +33,7 @@ export type Check = {
   amount: number;
   status: CheckStatus;
   note?: string;
+  facture?: string;
 };
 
 export type Checkbook = {

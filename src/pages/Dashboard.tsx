@@ -45,20 +45,95 @@ const SemiCircleGauge = ({ value, total, color, label, count, amount }: any) => 
   );
 };
 
-const TOP10_SORTS = ["Montant ↓", "Montant ↑", "Échéance proche"];
-const PARTNERS_SORTS = ["Top à payer", "Top payé"];
-const CALENDAR_STATUSES = ["Tous", "En Circulation", "En Retard", "Déposé", "Payé", "Annulé"];
-const WEEK_FILTERS = ["Tous", "En Retard", "En Circulation"];
+const TOP10_SORTS = [
+  "Montant le plus élevé",
+  "Montant le plus faible",
+  "Échéance la plus proche",
+  "Échéance la plus lointaine",
+  "En retard d'abord",
+  "Date d'émission la plus récente",
+  "Date d'émission la plus ancienne",
+  "Code (A-Z)",
+  "Code (Z-A)"
+];
+
+const PARTNERS_SORTS = [
+  "Top client à payer", 
+  "Moins client à payer", 
+  "Montant total le plus élevé", 
+  "Montant payé le plus élevé", 
+  "Nom (A-Z)", 
+  "Nom (Z-A)"
+];
+
+const CALENDAR_STATUSES = [
+  "Tous les statuts",
+  "En Circulation",
+  "Déposé",
+  "Impayé",
+  "Payé",
+  "Annulé"
+];
+
+const WEEK_FILTERS = [
+  "Tous les statuts", 
+  "Non Payé", 
+  "Payé", 
+  "Annulé"
+];
+
+const ANNUAL_FILTERS = [
+  "Total des montants à payer par mois",
+  "Total des montants déjà payés par mois",
+  "Total des montants annulés par mois"
+];
+
+function DropdownSelect({ options, value, onChange, prefix = "", buttonClassName = "" }: any) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn("flex items-center justify-between gap-2 bg-white px-3 py-1.5 rounded-[6px] border border-slate-800 text-[11px] font-bold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-50 relative z-20", buttonClassName)}
+      >
+        <span>{prefix && <span className="text-slate-500 font-normal">{prefix}</span>}{value}</span>
+        <ChevronDown className="w-3.5 h-3.5" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)}></div>
+          <div className="absolute left-0 top-full mt-1.5 min-w-[220px] w-full bg-white rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 py-1.5 z-40 flex flex-col">
+            {options.map((opt: string) => (
+              <button
+                key={opt}
+                onClick={() => { onChange(opt); setIsOpen(false); }}
+                className={cn(
+                  "w-full text-left px-4 py-2.5 text-[12px] transition-colors border-none bg-transparent cursor-pointer",
+                  opt === value ? "bg-slate-100 text-slate-800 font-bold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
+                )}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Dashboard() {
   const { checks, checkbooks, partnerList, bankAccounts } = useApp();
   const navigate = useNavigate();
 
   // Dashboard controls state
-  const [top10Sort, setTop10Sort] = useState(0);
-  const [partnersSort, setPartnersSort] = useState(0);
-  const [calendarFilterIdx, setCalendarFilterIdx] = useState(0);
-  const [weekFilterIdx, setWeekFilterIdx] = useState(0);
+  const [top10Sort, setTop10Sort] = useState(TOP10_SORTS[0]);
+  const [partnersSort, setPartnersSort] = useState(PARTNERS_SORTS[0]);
+  const [calendarFilter, setCalendarFilter] = useState(CALENDAR_STATUSES[0]);
+  const [weekFilter, setWeekFilter] = useState(WEEK_FILTERS[0]);
+  const [annualFilter, setAnnualFilter] = useState(ANNUAL_FILTERS[0]);
   const [checkToView, setCheckToView] = useState<Check | null>(null);
   const [checkToEdit, setCheckToEdit] = useState<Check | null>(null);
 
@@ -67,11 +142,6 @@ export function Dashboard() {
   const currentYear = new Date().getFullYear();
   const defaultYear = availableYears.includes(currentYear) ? currentYear : (availableYears[0] ?? currentYear);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
-
-  const cycleYear = () => {
-    const idx = availableYears.indexOf(selectedYear);
-    setSelectedYear(availableYears[(idx + 1) % availableYears.length] ?? selectedYear);
-  };
 
   // Status totals
   const statusCounts = { "En Circulation": 0, "En Retard": 0, "Payé": 0, "Annulé": 0 };
@@ -89,30 +159,47 @@ export function Dashboard() {
   const totalEmittedAmount = emittedChecks.reduce((s, c) => s + c.amount, 0);
 
   // Partner helpers (defined before topPartners so they can be used in sort)
-  const getPartnerPaid = (name: string) =>
-    emittedChecks.filter(c => c.partnerName === name && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
-  const getPartnerUnpaid = (name: string) =>
-    emittedChecks.filter(c => c.partnerName === name && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
+  const getPartnerPaid = (id: string) =>
+    emittedChecks.filter(c => c.partnerId === id && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
+  const getPartnerUnpaid = (id: string) =>
+    emittedChecks.filter(c => c.partnerId === id && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
 
   // Top 10 checks with sort
   const top10Checks = [...emittedChecks]
     .sort((a, b) => {
-      if (TOP10_SORTS[top10Sort] === "Montant ↑") return a.amount - b.amount;
-      if (TOP10_SORTS[top10Sort] === "Échéance proche") return a.dueDate.localeCompare(b.dueDate);
+      if (top10Sort === "Montant le plus élevé") return b.amount - a.amount;
+      if (top10Sort === "Montant le plus faible") return a.amount - b.amount;
+      if (top10Sort === "Échéance la plus proche") return (a.dueDate || "").localeCompare(b.dueDate || "");
+      if (top10Sort === "Échéance la plus lointaine") return (b.dueDate || "").localeCompare(a.dueDate || "");
+      if (top10Sort === "En retard d'abord") {
+        const weightA = a.status === "En Retard" ? 0 : 1;
+        const weightB = b.status === "En Retard" ? 0 : 1;
+        if (weightA !== weightB) return weightA - weightB;
+        return (a.dueDate || "").localeCompare(b.dueDate || "");
+      }
+      if (top10Sort === "Date d'émission la plus récente") return (b.emissionDate || "").localeCompare(a.emissionDate || "");
+      if (top10Sort === "Date d'émission la plus ancienne") return (a.emissionDate || "").localeCompare(b.emissionDate || "");
+      if (top10Sort === "Code (A-Z)") return (a.number || "").localeCompare(b.number || "");
+      if (top10Sort === "Code (Z-A)") return (b.number || "").localeCompare(a.number || "");
       return b.amount - a.amount;
     })
-    .slice(0, 5);
+    .slice(0, 10);
 
   // Top partners with sort
   const topPartners = [...partnerList]
-    .sort((a, b) =>
-      PARTNERS_SORTS[partnersSort] === "Top payé"
-        ? getPartnerPaid(b.name) - getPartnerPaid(a.name)
-        : Math.abs(b.balance) - Math.abs(a.balance)
-    )
+    .sort((a, b) => {
+      if (partnersSort === "Top client à payer") return getPartnerUnpaid(b.id) - getPartnerUnpaid(a.id);
+      if (partnersSort === "Moins client à payer") return getPartnerUnpaid(a.id) - getPartnerUnpaid(b.id);
+      if (partnersSort === "Montant total le plus élevé") return (getPartnerPaid(b.id) + getPartnerUnpaid(b.id)) - (getPartnerPaid(a.id) + getPartnerUnpaid(a.id));
+      if (partnersSort === "Montant payé le plus élevé") return getPartnerPaid(b.id) - getPartnerPaid(a.id);
+      if (partnersSort === "Nom (A-Z)") return a.name.localeCompare(b.name);
+      if (partnersSort === "Nom (Z-A)") return b.name.localeCompare(a.name);
+      return getPartnerUnpaid(b.id) - getPartnerUnpaid(a.id);
+    })
     .slice(0, 4);
 
   const getDaysInfo = (dueDate: string) => {
+    if (!dueDate) return { label: "N/A", color: "text-slate-500 bg-slate-50" };
     const due = new Date(dueDate + 'T00:00:00');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -129,10 +216,21 @@ export function Dashboard() {
   const monthlyStats = (() => {
     const months: Record<string, { total: number; count: number }> = {};
     emittedChecks.filter(c => c.dueDate.startsWith(String(selectedYear))).forEach(c => {
-      const month = c.dueDate.substring(5, 7);
-      if (!months[month]) months[month] = { total: 0, count: 0 };
-      months[month].total += c.amount;
-      months[month].count++;
+      let match = false;
+      if (annualFilter === "Total des montants à payer par mois") {
+        match = c.status !== "Payé" && c.status !== "Annulé";
+      } else if (annualFilter === "Total des montants déjà payés par mois") {
+        match = c.status === "Payé";
+      } else if (annualFilter === "Total des montants annulés par mois") {
+        match = c.status === "Annulé";
+      }
+
+      if (match) {
+        const month = c.dueDate.substring(5, 7);
+        if (!months[month]) months[month] = { total: 0, count: 0 };
+        months[month].total += c.amount;
+        months[month].count++;
+      }
     });
     return months;
   })();
@@ -148,7 +246,14 @@ export function Dashboard() {
   const weekChecks = emittedChecks.filter(c => {
     const d = new Date(c.dueDate + 'T00:00:00');
     const inRange = d >= today && d <= weekEnd;
-    const matchFilter = WEEK_FILTERS[weekFilterIdx] === "Tous" || c.status === WEEK_FILTERS[weekFilterIdx];
+    
+    let matchFilter = true;
+    if (weekFilter === "Non Payé") {
+      matchFilter = ["En Circulation", "En Retard", "Déposé", "Impayé"].includes(c.status);
+    } else if (weekFilter !== "Tous les statuts") {
+      matchFilter = c.status === weekFilter;
+    }
+    
     return inRange && matchFilter;
   }).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 
@@ -173,9 +278,7 @@ export function Dashboard() {
   while (calendarGrid.length % 7 !== 0) calendarGrid.push(null);
 
   const calendarDaysNames = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
-  const calendarFilter = CALENDAR_STATUSES[calendarFilterIdx];
-
-  const filteredForCalendar = calendarFilter === "Tous"
+  const filteredForCalendar = calendarFilter === "Tous les statuts"
     ? emittedChecks
     : emittedChecks.filter(c => c.status === calendarFilter);
 
@@ -224,13 +327,13 @@ export function Dashboard() {
             <div className="flex items-center gap-2 font-bold text-[14px] text-slate-800 mb-4">
               <LayoutList className="w-4 h-4 text-slate-400" /> Top 10 valeurs
             </div>
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
-              <button
-                onClick={() => setTop10Sort(i => (i + 1) % TOP10_SORTS.length)}
-                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer hover:bg-slate-100"
-              >
-                Trier par: {TOP10_SORTS[top10Sort]} <ChevronDown className="w-3 h-3" />
-              </button>
+            <div className="flex flex-wrap items-center gap-2 mb-4 pb-1">
+              <DropdownSelect 
+                options={TOP10_SORTS} 
+                value={top10Sort} 
+                onChange={setTop10Sort} 
+                prefix="Trier par: " 
+              />
               <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-red-400"></span> En retard
               </div>
@@ -318,13 +421,13 @@ export function Dashboard() {
             <div className="flex items-center gap-2 font-bold text-[14px] text-slate-800 mb-4">
               <Users className="w-4 h-4 text-slate-400" /> Top bénéficiaires
             </div>
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
-              <button
-                onClick={() => setPartnersSort(i => (i + 1) % PARTNERS_SORTS.length)}
-                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer hover:bg-slate-100"
-              >
-                Trier par: {PARTNERS_SORTS[partnersSort]} <ChevronDown className="w-3 h-3" />
-              </button>
+            <div className="flex flex-wrap items-center gap-2 mb-4 pb-1">
+              <DropdownSelect 
+                options={PARTNERS_SORTS} 
+                value={partnersSort} 
+                onChange={setPartnersSort} 
+                prefix="Trier par: " 
+              />
               <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-primary"></span> Valeurs payées
               </div>
@@ -339,14 +442,14 @@ export function Dashboard() {
                     <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase">
                       <User className="w-3.5 h-3.5 text-slate-400" /> {partner.name}
                     </div>
-                    <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(Math.abs(partner.balance)).replace('MAD', 'DH')}</div>
+                    <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(getPartnerPaid(partner.id) + getPartnerUnpaid(partner.id)).replace('MAD', 'DH')}</div>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3 h-3" /> {formatMAD(getPartnerPaid(partner.name)).replace('MAD', 'DH')}
+                      <CheckCircle2 className="w-3 h-3" /> {formatMAD(getPartnerPaid(partner.id)).replace('MAD', 'DH')}
                     </div>
                     <div className="flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                      <Activity className="w-3 h-3" /> {formatMAD(getPartnerUnpaid(partner.name)).replace('MAD', 'DH')}
+                      <Activity className="w-3 h-3" /> {formatMAD(getPartnerUnpaid(partner.id)).replace('MAD', 'DH')}
                     </div>
                   </div>
                 </div>
@@ -358,22 +461,25 @@ export function Dashboard() {
           </div>
 
           {/* Statistique annuel */}
-          <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex flex-col min-h-[250px]">
+          <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex flex-col min-h-[250px] relative">
             <div className="flex items-center gap-2 font-bold text-[14px] text-slate-800 mb-4">
               <BarChart3 className="w-4 h-4 text-slate-400" /> Statistique annuel
             </div>
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
-              <button
-                onClick={cycleYear}
-                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 cursor-pointer whitespace-nowrap hover:bg-slate-100"
-              >
-                {selectedYear} <ChevronDown className="w-3 h-3" />
-              </button>
-              <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 cursor-pointer whitespace-nowrap">
-                Montants à payer par mois
-              </div>
+            <div className="flex flex-wrap items-center gap-2 mb-4 pb-1 relative z-20">
+              <DropdownSelect 
+                options={availableYears.length > 0 ? availableYears.map(String) : [String(currentYear)]} 
+                value={String(selectedYear)} 
+                onChange={(val: string) => setSelectedYear(parseInt(val, 10))} 
+                buttonClassName="border-slate-200 text-slate-600 font-medium"
+              />
+              <DropdownSelect 
+                options={ANNUAL_FILTERS} 
+                value={annualFilter} 
+                onChange={setAnnualFilter} 
+                buttonClassName="border-slate-800 text-slate-800"
+              />
             </div>
-            <div className="flex-1 flex flex-col justify-center space-y-1">
+            <div className="flex-1 flex flex-col justify-center space-y-1 relative z-10">
               {monthNames.map((name, idx) => {
                 const key = String(idx + 1).padStart(2, '0');
                 const stat = monthlyStats[key];
@@ -400,8 +506,8 @@ export function Dashboard() {
                 </div>
               )}
             </div>
-            <button onClick={() => navigate("/emis")} className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer">
-              Voir tous les chèques
+            <button onClick={() => navigate("/emis")} className="mt-4 w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-blue-600 text-[12px] font-bold rounded-[8px] transition-colors border-none cursor-pointer relative z-10">
+              Plus de résultats
             </button>
           </div>
         </div>
@@ -413,15 +519,12 @@ export function Dashboard() {
             <div className="flex items-center gap-2 font-bold text-[14px] text-slate-800 mb-4">
               <CalendarIcon className="w-4 h-4 text-slate-400" /> À échéance cette semaine
             </div>
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-1">
-              <button
-                onClick={() => setWeekFilterIdx(i => (i + 1) % WEEK_FILTERS.length)}
-                className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-200 text-[10px] font-medium text-slate-600 whitespace-nowrap cursor-pointer hover:bg-slate-100"
-              >
-                {WEEK_FILTERS[weekFilterIdx] === "Tous" ? null : <AlertTriangle className="w-3 h-3 text-red-500" />}
-                {WEEK_FILTERS[weekFilterIdx] === "Tous" ? "Tous statuts" : WEEK_FILTERS[weekFilterIdx]}
-                <ChevronDown className="w-3 h-3" />
-              </button>
+            <div className="flex flex-wrap items-center gap-2 mb-4 pb-1">
+              <DropdownSelect 
+                options={WEEK_FILTERS} 
+                value={weekFilter} 
+                onChange={setWeekFilter} 
+              />
               <div className="flex items-center gap-1 bg-cyan-50 text-cyan-700 px-2 py-1 rounded-[6px] text-[10px] font-bold whitespace-nowrap">
                 Total: {weekChecks.length}
               </div>
@@ -432,9 +535,14 @@ export function Dashboard() {
             <div className="flex-1 overflow-y-auto pr-1 space-y-4">
               {weekDays.map((date, idx) => {
                 const dateStr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
-                const dateKey = date.toISOString().split('T')[0];
+                const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                 const dayChecks = emittedChecks.filter(c => {
-                  const matchFilter = WEEK_FILTERS[weekFilterIdx] === "Tous" || c.status === WEEK_FILTERS[weekFilterIdx];
+                  let matchFilter = true;
+                  if (weekFilter === "Non Payé") {
+                    matchFilter = ["En Circulation", "En Retard", "Déposé", "Impayé"].includes(c.status);
+                  } else if (weekFilter !== "Tous les statuts") {
+                    matchFilter = c.status === weekFilter;
+                  }
                   return c.dueDate === dateKey && matchFilter;
                 });
                 return (
@@ -510,12 +618,11 @@ export function Dashboard() {
           </div>
         </div>
 
-        <button
-          onClick={() => setCalendarFilterIdx(i => (i + 1) % CALENDAR_STATUSES.length)}
-          className="flex items-center gap-1 bg-white px-4 py-2 rounded-[8px] border border-slate-200 text-[12px] font-medium text-slate-600 cursor-pointer shadow-sm hover:bg-slate-50"
-        >
-          {calendarFilter} <ChevronDown className="w-4 h-4 ml-2" />
-        </button>
+        <DropdownSelect 
+          options={CALENDAR_STATUSES} 
+          value={calendarFilter} 
+          onChange={setCalendarFilter} 
+        />
       </div>
 
       {/* Calendar View */}

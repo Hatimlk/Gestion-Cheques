@@ -1,7 +1,8 @@
-import { X } from "lucide-react";
 import { useState, useEffect, type FormEvent } from "react";
 import { useApp } from "@/lib/AppContext";
 import type { Check, CheckType } from "@/lib/types";
+import { DatePicker } from "./DatePicker";
+import { ChevronDown } from "lucide-react";
 
 interface NewCheckModalProps {
   isOpen: boolean;
@@ -11,14 +12,20 @@ interface NewCheckModalProps {
 
 export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps) {
   const { addCheck, updateCheck, bankAccounts, checkbooks } = useApp();
-  const [docType, setDocType] = useState<CheckType>("Chèque");
+  
+  const [docType, setDocType] = useState<CheckType | "">("");
   const [amount, setAmount] = useState("");
   const [beneficiary, setBeneficiary] = useState("");
   const [checkNumber, setCheckNumber] = useState("");
   const [bankAccountId, setBankAccountId] = useState("");
   const [checkbookId, setCheckbookId] = useState("");
-  const [emissionDate, setEmissionDate] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  
+  const [emissionDate, setEmissionDate] = useState<Date | null>(null);
+  const [dueDate, setDueDate] = useState<Date | null>(null);
+  
+  const [isCancelled, setIsCancelled] = useState(false);
+  const [facture, setFacture] = useState("");
+  const [note, setNote] = useState("");
 
   useEffect(() => {
     if (editCheck) {
@@ -28,17 +35,21 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
       setCheckNumber(editCheck.number);
       setBankAccountId(editCheck.bankAccountId);
       setCheckbookId(editCheck.checkbookId || "");
-      setEmissionDate(editCheck.emissionDate);
-      setDueDate(editCheck.dueDate);
+      setEmissionDate(editCheck.emissionDate ? new Date(editCheck.emissionDate) : null);
+      setDueDate(editCheck.dueDate ? new Date(editCheck.dueDate) : null);
+      setIsCancelled(editCheck.status === "Annulé");
     } else {
-      setDocType("Chèque");
+      setDocType("");
       setAmount("");
       setBeneficiary("");
       setCheckNumber("");
       setBankAccountId("");
       setCheckbookId("");
-      setEmissionDate("");
-      setDueDate("");
+      setEmissionDate(null);
+      setDueDate(null);
+      setIsCancelled(false);
+      setFacture("");
+      setNote("");
     }
   }, [editCheck, isOpen]);
 
@@ -47,45 +58,39 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
   const isEditing = !!editCheck;
 
   const availableCheckbooks = checkbooks.filter(
-    cb => cb.bankAccountId === bankAccountId && cb.type === docType && (isEditing ? true : cb.remaining > 0)
+    cb => cb.bankAccountId === bankAccountId && (docType ? cb.type === docType : true) && (isEditing ? true : cb.remaining > 0)
   );
-
-  const handleBankAccountChange = (id: string) => {
-    setBankAccountId(id);
-    if (!isEditing) setCheckbookId("");
-  };
-
-  const handleDocTypeChange = (type: CheckType) => {
-    setDocType(type);
-    if (!isEditing) setCheckbookId("");
-  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (!docType) return;
     const num = parseFloat(amount.replace(/,/g, "."));
     if (isNaN(num)) return;
     if (!bankAccounts.find(a => a.id === bankAccountId)) return;
 
+    const emDate = emissionDate ? emissionDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+    const dDate = dueDate ? dueDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+
     if (isEditing) {
       updateCheck(editCheck.id, {
-        type: docType,
+        type: docType as CheckType,
         number: checkNumber,
         partnerName: beneficiary,
         bankAccountId,
-        emissionDate,
-        dueDate,
+        emissionDate: emDate,
+        dueDate: dDate,
         amount: num,
       });
     } else {
       addCheck({
         bankAccountId,
         checkbookId: checkbookId || undefined,
-        type: docType,
+        type: docType as CheckType,
         number: checkNumber,
         partnerId: "",
         partnerName: beneficiary,
-        emissionDate,
-        dueDate,
+        emissionDate: emDate,
+        dueDate: dDate,
         amount: num,
       });
     }
@@ -94,131 +99,146 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[12px] shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-4 border-b border-slate-100">
-          <h2 className="text-[16px] font-bold text-slate-900 m-0">
-            {isEditing ? `Modifier ${editCheck.type} N°${editCheck.number}` : `Nouveau ${docType}`}
+      <div className="bg-white rounded-[12px] shadow-xl w-full max-w-4xl overflow-hidden flex flex-col">
+        <div className="p-8">
+          <h2 className="text-[18px] font-bold text-slate-900 mb-8">
+            Delivré un Nouveau Chèque/effet
           </h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-[6px] hover:bg-slate-50 border-none bg-transparent cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto">
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Type de document</label>
-                <select value={docType} onChange={(e) => handleDocTypeChange(e.target.value as CheckType)} className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                  <option value="Chèque">Chèque</option>
-                  <option value="Effet">Lettre de Change (Effet)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Montant (MAD)</label>
-                <input
-                  type="text"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              <div className="relative">
+                <select 
+                  className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-500 bg-white appearance-none outline-none focus:border-slate-400"
+                  value={bankAccountId} 
+                  onChange={e => setBankAccountId(e.target.value)} 
                   required
+                >
+                  <option value="" disabled>Sélectionner un RIB</option>
+                  {bankAccounts.map(a => (
+                    <option key={a.id} value={a.id}>{a.bankName} - {a.rib}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+
+              <div className="relative">
+                <select 
+                  className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-500 bg-white appearance-none outline-none focus:border-slate-400"
+                  value={checkbookId} 
+                  onChange={e => setCheckbookId(e.target.value)}
+                >
+                  <option value="" disabled>Sélectionner un carnet</option>
+                  {availableCheckbooks.map(cb => (
+                    <option key={cb.id} value={cb.id}>{cb.type} N°{cb.startNumber}–{cb.endNumber}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+
+              <div className="relative">
+                <select 
+                  className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-500 bg-white appearance-none outline-none focus:border-slate-400"
+                  value={docType} 
+                  onChange={e => setDocType(e.target.value as CheckType)}
+                  required
+                >
+                  <option value="" disabled>Sélectionner une valeur</option>
+                  <option value="Chèque">Chèque</option>
+                  <option value="Effet">Effet</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Numéro de document" 
+                  value={checkNumber} 
+                  onChange={e => setCheckNumber(e.target.value)} 
+                  className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 placeholder:text-slate-400" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={isCancelled} onChange={e => setIsCancelled(e.target.checked)} />
+                <div className="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[26px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:bg-slate-400"></div>
+              </label>
+              <span className="text-[14px] font-bold text-slate-600">Ce chèque est annulé</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-8">
+              <input 
+                type="text" 
+                placeholder="Bénéficiaire" 
+                value={beneficiary} 
+                onChange={e => setBeneficiary(e.target.value)} 
+                className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 placeholder:text-slate-400" 
+                required 
+              />
+              <input 
+                type="text" 
+                placeholder="Montant" 
+                value={amount} 
+                onChange={e => setAmount(e.target.value)} 
+                className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 placeholder:text-slate-400" 
+                required 
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="h-[46px]">
+                <DatePicker 
+                  label="Date délivrance" 
+                  value={emissionDate} 
+                  onChange={setEmissionDate} 
+                  placeholder="07/06/2026" 
+                />
+              </div>
+              <div className="h-[46px]">
+                <DatePicker 
+                  label="Date d'Échéance" 
+                  value={dueDate} 
+                  onChange={setDueDate} 
+                />
+              </div>
+              <div className="h-[46px]">
+                <input 
+                  type="text" 
+                  placeholder="Facture (facultatif)" 
+                  value={facture} 
+                  onChange={e => setFacture(e.target.value)} 
+                  className="w-full h-full px-4 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 placeholder:text-slate-400" 
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[12px] font-semibold text-slate-700 mb-1">Bénéficiaire</label>
-              <input
-                type="text"
-                value={beneficiary}
-                onChange={(e) => setBeneficiary(e.target.value)}
-                placeholder="Nom du partenaire"
-                className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                required
-              />
+              <textarea 
+                placeholder="Note (facultatif)" 
+                value={note} 
+                onChange={e => setNote(e.target.value)} 
+                className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 resize-none placeholder:text-slate-400" 
+                rows={3}
+              ></textarea>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Numéro de {docType}</label>
-                <input
-                  type="text"
-                  value={checkNumber}
-                  onChange={(e) => setCheckNumber(e.target.value)}
-                  placeholder="Ex: 123456"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Compte</label>
-                <select
-                  value={bankAccountId}
-                  onChange={(e) => handleBankAccountChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  required
-                >
-                  <option value="">Sélectionner...</option>
-                  {bankAccounts.map(a => (
-                    <option key={a.id} value={a.id}>{a.bankName}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {!isEditing && bankAccountId && (
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">
-                  Carnet <span className="text-slate-400 font-normal">(optionnel)</span>
-                </label>
-                <select
-                  value={checkbookId}
-                  onChange={(e) => setCheckbookId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                >
-                  <option value="">Sans carnet</option>
-                  {availableCheckbooks.map(cb => (
-                    <option key={cb.id} value={cb.id}>
-                      {cb.type} N°{cb.startNumber}–{cb.endNumber} ({cb.remaining} restants)
-                    </option>
-                  ))}
-                </select>
-                {availableCheckbooks.length === 0 && (
-                  <p className="text-[11px] text-orange-500 mt-1">Aucun carnet disponible pour ce compte et type.</p>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Date d'émission</label>
-                <input
-                  type="date"
-                  value={emissionDate}
-                  onChange={(e) => setEmissionDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Date d'échéance</label>
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="pt-4 flex justify-end gap-3 mt-6 border-t border-slate-100">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-[6px] hover:bg-slate-50 transition cursor-pointer">
+            <div className="flex justify-end gap-3 mt-8">
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="px-6 py-2.5 text-[14px] font-bold text-slate-800 bg-white border border-slate-200 rounded-[8px] hover:bg-slate-50 transition cursor-pointer"
+              >
                 Annuler
               </button>
-              <button type="submit" className="px-4 py-2 text-[13px] font-semibold text-white bg-primary rounded-[6px] hover:opacity-90 transition border-none cursor-pointer">
-                {isEditing ? "Enregistrer" : "Créer et Sauvegarder"}
+              <button 
+                type="submit" 
+                className="px-6 py-2.5 text-[14px] font-bold text-white bg-[#1E293B] rounded-[8px] hover:bg-slate-800 transition cursor-pointer border-none"
+              >
+                Soumettre
               </button>
             </div>
           </form>

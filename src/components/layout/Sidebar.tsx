@@ -1,27 +1,37 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  BarChart,
-  Wallet,
   Users,
-  BookCopy,
-  ArrowUpRight,
   Printer,
   CalendarDays,
-  Building2,
-  LogOut
+  LogOut,
+  LayoutDashboard,
+  Briefcase,
+  UserCog,
+  FileEdit,
+  FileUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
 
-const NAV_ITEMS = [
-  { name: "Tableau de Bord", path: "/", icon: BarChart },
-  { name: "Comptes", path: "/comptes", icon: Wallet },
-  { name: "Rôles & Permissions", path: "/roles", icon: Users },
-  { name: "Les Carnets", path: "/carnets", icon: BookCopy },
-  { name: "Chèques Émis", path: "/emis", icon: ArrowUpRight },
-  { name: "Impression", path: "/impression", icon: Printer },
-  { name: "Calendrier", path: "/calendrier", icon: CalendarDays },
-  { name: "Partenaires", path: "/partenaires", icon: Building2 },
+const NAV_GROUPS = [
+  {
+    title: "TABLEAU DE BORD",
+    items: [
+      { name: "Tableau De Bord", path: "/", icon: LayoutDashboard },
+      { name: "Comptes", path: "/comptes", icon: Briefcase },
+      { name: "Rôles", path: "/roles", icon: UserCog, hasInfo: true },
+    ]
+  },
+  {
+    title: "CHÈQUES ET EFFETS",
+    items: [
+      { name: "Les Carnets", path: "/carnets", icon: FileEdit },
+      { name: "Émis", path: "/emis", icon: FileUp, hasInfo: true },
+      { name: "Calendrier", path: "/calendrier", icon: CalendarDays },
+      { name: "Les Client", path: "/partenaires", icon: Users },
+      { name: "Impression", path: "/impression", icon: Printer },
+    ]
+  }
 ];
 
 export function Sidebar() {
@@ -41,26 +51,41 @@ export function Sidebar() {
         <span className="text-[18px] font-extrabold tracking-tight text-primary">Gadimat<span className="text-white font-semibold ml-1">Chèques</span></span>
       </div>
 
-      <nav className="flex-1 py-4 space-y-0.5 overflow-y-auto">
-        <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 px-6">Menu Principal</div>
-        {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-[12px] px-6 py-[10px] text-[13px] font-medium transition-all duration-200",
-                isActive 
-                  ? "bg-slate-800 text-primary border-l-4 border-primary" 
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white border-l-4 border-transparent"
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.name}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 py-4 overflow-y-auto hide-scrollbar">
+        {NAV_GROUPS.map((group, groupIdx) => (
+          <div key={groupIdx} className={groupIdx > 0 ? "mt-6" : ""}>
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-8">
+              {group.title}
+            </div>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      "flex items-center gap-[14px] px-4 py-3 mx-4 rounded-[12px] text-[13px] font-bold transition-all duration-200",
+                      isActive 
+                        ? "bg-[#1e293b] text-blue-500" 
+                        : "text-slate-300 hover:text-slate-200 hover:bg-[#1e293b]/50"
+                    )}
+                  >
+                    <div className="relative flex items-center justify-center">
+                      <item.icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2.5 : 2} />
+                      {item.hasInfo && (
+                        <div className="absolute -top-1.5 -left-2 w-3.5 h-3.5 bg-slate-400 rounded-full flex items-center justify-center text-[#0f172a] text-[9px] font-bold border-2 border-[#0f172a]">
+                          i
+                        </div>
+                      )}
+                    </div>
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
 
         <div className="border-t border-slate-700 mx-4 my-2" />
 

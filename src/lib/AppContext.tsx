@@ -187,7 +187,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addCheck = useCallback((data: {
     bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string;
-    partnerName: string; emissionDate: string; dueDate: string; amount: number
+    partnerName: string; emissionDate: string; dueDate: string; amount: number; facture?: string; note?: string
   }) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -207,6 +207,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dueDate: data.dueDate,
       amount: data.amount,
       status,
+      facture: data.facture,
+      note: data.note,
     };
     setChecks(prev => [...prev, newCheck]);
 
