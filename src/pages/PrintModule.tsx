@@ -149,7 +149,7 @@ export function PrintModule() {
         emissionDate: date || new Date().toISOString().split("T")[0],
         dueDate: type === "Effet" ? (dueDate || new Date().toISOString().split("T")[0]) : (date || new Date().toISOString().split("T")[0]),
         amount: parsedAmount,
-        isReceived: false,
+        note: "Reçu",
       });
       setIsFromExisting(true);
     }
@@ -335,8 +335,8 @@ export function PrintModule() {
               drag
               dragMomentum={false}
               onDragEnd={(e, info) => handleDragEnd(el.id, info)}
-              initial={positions[el.id]}
-              animate={positions[el.id]}
+              initial={{ x: positions[el.id].x, y: positions[el.id].y }}
+              animate={{ x: positions[el.id].x, y: positions[el.id].y }}
               className={`absolute cursor-move print:cursor-default text-slate-800 ${isEffet && el.id === 'amountLetters' ? 'whitespace-normal' : 'whitespace-nowrap'} px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 print:border-none print:bg-transparent print:p-0 ${el.className}`}
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >

@@ -12,6 +12,7 @@ const Calendar = lazy(() => import("./pages/Calendar").then(m => ({ default: m.C
 const Partners = lazy(() => import("./pages/Partners").then(m => ({ default: m.Partners })));
 const Roles = lazy(() => import("./pages/Roles").then(m => ({ default: m.Roles })));
 const PrintModule = lazy(() => import("./pages/PrintModule").then(m => ({ default: m.PrintModule })));
+const Guide = lazy(() => import("./pages/Guide").then(m => ({ default: m.Guide })));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useApp();
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="carnets" element={<Suspense fallback={<LoadingFallback />}><Checkbooks /></Suspense>} />
             <Route path="calendrier" element={<Suspense fallback={<LoadingFallback />}><Calendar /></Suspense>} />
             <Route path="partenaires" element={<Suspense fallback={<LoadingFallback />}><Partners /></Suspense>} />
+            <Route path="guide" element={<Suspense fallback={<LoadingFallback />}><Guide /></Suspense>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

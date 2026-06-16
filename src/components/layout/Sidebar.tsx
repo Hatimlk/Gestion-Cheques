@@ -8,7 +8,8 @@ import {
   Briefcase,
   UserCog,
   FileEdit,
-  FileUp
+  FileUp,
+  BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
@@ -28,8 +29,14 @@ const NAV_GROUPS = [
       { name: "Les Carnets", path: "/carnets", icon: FileEdit },
       { name: "Émis", path: "/emis", icon: FileUp, hasInfo: true },
       { name: "Calendrier", path: "/calendrier", icon: CalendarDays },
-      { name: "Les Client", path: "/partenaires", icon: Users },
+      { name: "Les Clients", path: "/partenaires", icon: Users },
       { name: "Impression", path: "/impression", icon: Printer },
+    ]
+  },
+  {
+    title: "AIDE",
+    items: [
+      { name: "Guide d'utilisation", path: "/guide", icon: BookOpen }
     ]
   }
 ];
@@ -64,6 +71,7 @@ export function Sidebar() {
                   <Link
                     key={item.path}
                     to={item.path}
+                    data-tour={item.name}
                     className={cn(
                       "flex items-center gap-[14px] px-4 py-3 mx-4 rounded-[12px] text-[13px] font-bold transition-all duration-200",
                       isActive 
@@ -89,7 +97,7 @@ export function Sidebar() {
 
         <div className="border-t border-slate-700 mx-4 my-2" />
 
-        <div className="px-6 py-2">
+        <div className="px-6 py-2 tour-user-profile">
           <div className="text-[11px] text-slate-400 truncate">{currentUser?.name}</div>
           <div className="text-[10px] text-slate-500 truncate">{currentUser?.email}</div>
         </div>

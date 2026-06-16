@@ -159,10 +159,10 @@ export function Dashboard() {
   const totalEmittedAmount = emittedChecks.reduce((s, c) => s + c.amount, 0);
 
   // Partner helpers (defined before topPartners so they can be used in sort)
-  const getPartnerPaid = (id: string) =>
-    emittedChecks.filter(c => c.partnerId === id && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
-  const getPartnerUnpaid = (id: string) =>
-    emittedChecks.filter(c => c.partnerId === id && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
+  const getPartnerPaid = (id: string | number) =>
+    emittedChecks.filter(c => c.partnerId === String(id) && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
+  const getPartnerUnpaid = (id: string | number) =>
+    emittedChecks.filter(c => c.partnerId === String(id) && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
 
   // Top 10 checks with sort
   const top10Checks = [...emittedChecks]
@@ -367,8 +367,8 @@ export function Dashboard() {
                   <div className="flex flex-col items-end gap-1.5">
                     <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(check.amount).replace('MAD', 'DH')}</div>
                     <div className="flex gap-2">
-                      <Eye onClick={() => setCheckToView(check)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" title="Voir" />
-                      <Pencil onClick={() => setCheckToEdit(check)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-blue-600" title="Modifier" />
+                      <span title="Voir"><Eye onClick={() => setCheckToView(check)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" /></span>
+                      <span title="Modifier"><Pencil onClick={() => setCheckToEdit(check)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-blue-600" /></span>
                     </div>
                   </div>
                 </div>
@@ -559,8 +559,8 @@ export function Dashboard() {
                         <div className="flex items-center gap-3">
                           <span className="font-bold text-[11px] text-slate-800">{formatMAD(c.amount).replace('MAD', 'DH')}</span>
                           <div className="flex gap-1.5">
-                            <Eye onClick={() => setCheckToView(c)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" title="Voir" />
-                            <Pencil onClick={() => setCheckToEdit(c)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-blue-600" title="Modifier" />
+                            <span title="Voir"><Eye onClick={() => setCheckToView(c)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" /></span>
+                            <span title="Modifier"><Pencil onClick={() => setCheckToEdit(c)} className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-blue-600" /></span>
                           </div>
                         </div>
                       </div>

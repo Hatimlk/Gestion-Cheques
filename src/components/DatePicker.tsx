@@ -27,8 +27,8 @@ export function DatePicker({ label, value, onChange, placeholder = "DD/MM/YYYY" 
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart, { weekStarts: 1 });
-  const endDate = endOfWeek(monthEnd, { weekStarts: 1 });
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));

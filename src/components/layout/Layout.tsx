@@ -1,10 +1,13 @@
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { AppTour } from "../AppTour";
 
 export function Layout() {
   return (
-    <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden text-slate-800 text-[13px]">
+    <>
+      <AppTour />
+      <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden text-slate-800 text-[13px]">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
@@ -12,6 +15,7 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

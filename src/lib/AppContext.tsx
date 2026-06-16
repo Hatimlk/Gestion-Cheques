@@ -53,7 +53,7 @@ interface AppContextType {
   deleteBankAccount: (id: string) => void;
   addCheckbook: (data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => void;
   deleteCheckbook: (id: string) => void;
-  addCheck: (data: { bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number }) => void;
+  addCheck: (data: { bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number; facture?: string; note?: string }) => void;
   updateCheck: (id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => void;
   updateCheckStatus: (id: string, status: CheckStatus) => void;
   deleteCheck: (id: string) => void;

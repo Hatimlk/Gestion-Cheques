@@ -374,7 +374,7 @@ export function IssuedChecks() {
         </div>
 
         {/* Filters */}
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white filters-bar">
           <div className="flex flex-wrap items-center gap-3 flex-1">
 
 
@@ -504,14 +504,15 @@ export function IssuedChecks() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <Pencil
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActionMenuOpenId(actionMenuOpenId === check.id ? null : check.id);
-                            }}
-                            className="w-4 h-4 text-slate-400 hover:text-blue-600 cursor-pointer transition-colors relative z-10"
-                            title="Modifier Statut"
-                          />
+                          <span title="Modifier Statut">
+                            <Pencil
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActionMenuOpenId(actionMenuOpenId === check.id ? null : check.id);
+                              }}
+                              className="w-4 h-4 text-slate-400 hover:text-blue-600 cursor-pointer transition-colors relative z-10"
+                            />
+                          </span>
                           {actionMenuOpenId === check.id && (
                             <>
                               <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActionMenuOpenId(null); }}></div>
@@ -548,16 +549,18 @@ export function IssuedChecks() {
                             </>
                           )}
                         </div>
-                        <Eye
-                          onClick={() => setCheckToView(check)}
-                          className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
-                          title="Voir détails"
-                        />
-                        <Printer
-                          onClick={() => handlePrint(check)}
-                          className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
-                          title="Imprimer"
-                        />
+                        <span title="Voir détails">
+                          <Eye
+                            onClick={() => setCheckToView(check)}
+                            className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+                          />
+                        </span>
+                        <span title="Imprimer">
+                          <Printer
+                            onClick={() => handlePrint(check)}
+                            className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+                          />
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-4">

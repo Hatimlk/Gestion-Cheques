@@ -48,7 +48,7 @@ export function BankAccounts() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsAccountModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-[6px] text-[12px] font-semibold text-slate-700 hover:bg-slate-50 transition bg-white cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-[6px] text-[12px] font-semibold text-slate-700 hover:bg-slate-50 transition bg-white cursor-pointer add-account-btn"
             >
               <Plus className="w-3.5 h-3.5" />
               Ajouter un Nouveau RIB
