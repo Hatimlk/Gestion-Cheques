@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { BankAccount, Checkbook, Check, CheckStatus, CheckType } from "./types";
-import { MOCK_BANK_ACCOUNTS, MOCK_CHECKBOOKS, MOCK_CHECKS } from "./mock-data";
+import { api } from "./api";
 
 export type UserRole = "Administrateur" | "Comptable" | "Agent de saisie";
 export type UserStatus = "Actif" | "Inactif";
@@ -26,19 +26,6 @@ export interface PartnerListItem {
 
 export const COMPANY_NAME = "GADIMAT S.A";
 
-const INITIAL_USERS: User[] = [
-  { id: 1, name: "Hatim Lk", email: "hatim@gadimat.ma", role: "Administrateur", status: "Actif" },
-  { id: 2, name: "Sara M.", email: "sara@gadimat.ma", role: "Comptable", status: "Actif" },
-  { id: 3, name: "Youssef T.", email: "youssef@gadimat.ma", role: "Agent de saisie", status: "Inactif" },
-];
-
-const INITIAL_PARTNER_LIST: PartnerListItem[] = [
-  { id: 1, type: "Fournisseur", name: "Cimenterie Lafarge", contact: "Ahmed B.", phone: "06 00 00 00 01", balance: -45000 },
-  { id: 2, type: "Client", name: "BTP Construction", contact: "Karim M.", phone: "06 00 00 00 02", balance: 120000 },
-  { id: 3, type: "Fournisseur", name: "Acier Maroc", contact: "Youssef L.", phone: "06 00 00 00 03", balance: -15000 },
-  { id: 4, type: "Client", name: "Entreprise Z", contact: "Hassan T.", phone: "06 00 00 00 04", balance: 0 },
-];
-
 interface AppContextType {
   bankAccounts: BankAccount[];
   checkbooks: Checkbook[];
@@ -47,252 +34,285 @@ interface AppContextType {
   users: User[];
   currentUser: User | null;
   isAuthenticated: boolean;
-  login: (email: string) => string | null;
+  initialized: boolean;
+  login: (email: string, password: string) => Promise<string | null>;
   logout: () => void;
-  addBankAccount: (data: { bankName: string; rib: string }) => void;
-  deleteBankAccount: (id: string) => void;
-  addCheckbook: (data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => void;
-  deleteCheckbook: (id: string) => void;
-  addCheck: (data: { bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number; facture?: string; note?: string }) => void;
-  updateCheck: (id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => void;
-  updateCheckStatus: (id: string, status: CheckStatus) => void;
-  deleteCheck: (id: string) => void;
-  updateBankAccount: (id: string, data: { bankName: string; rib: string }) => void;
-  addPartnerListItem: (data: Omit<PartnerListItem, "id">) => void;
-  updatePartnerListItem: (id: number, data: Partial<PartnerListItem>) => void;
-  deletePartnerListItem: (id: number) => void;
-  addUser: (data: Omit<User, "id">) => void;
-  updateUser: (id: number, data: Partial<User>) => void;
-  deleteUser: (id: number) => void;
-  toggleUserStatus: (id: number) => void;
-}
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const saved = localStorage.getItem(key);
-    if (saved) return JSON.parse(saved);
-  } catch {}
-  return fallback;
+  addBankAccount: (data: { bankName: string; rib: string }) => Promise<void>;
+  deleteBankAccount: (id: string) => Promise<void>;
+  updateBankAccount: (id: string, data: { bankName: string; rib: string }) => Promise<void>;
+  addCheckbook: (data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => Promise<void>;
+  deleteCheckbook: (id: string) => Promise<void>;
+  addCheck: (data: { bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number; facture?: string; note?: string }) => Promise<void>;
+  updateCheck: (id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => Promise<void>;
+  updateCheckStatus: (id: string, status: CheckStatus) => Promise<void>;
+  deleteCheck: (id: string) => Promise<void>;
+  addPartnerListItem: (data: Omit<PartnerListItem, "id">) => Promise<void>;
+  updatePartnerListItem: (id: number, data: Partial<PartnerListItem>) => Promise<void>;
+  deletePartnerListItem: (id: number) => Promise<void>;
+  addUser: (data: Omit<User, "id"> & { password: string }) => Promise<void>;
+  updateUser: (id: number, data: Partial<User> & { password?: string }) => Promise<void>;
+  deleteUser: (id: number) => Promise<void>;
+  toggleUserStatus: (id: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
+async function loadAll() {
+  return Promise.all([
+    api.get<BankAccount[]>('/bank-accounts'),
+    api.get<Checkbook[]>('/checkbooks'),
+    api.get<Check[]>('/checks'),
+    api.get<PartnerListItem[]>('/partners'),
+    api.get<User[]>('/users'),
+  ]);
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(() =>
-    loadFromStorage("gadimat_bankAccounts", MOCK_BANK_ACCOUNTS)
-  );
-  const [checkbooks, setCheckbooks] = useState<Checkbook[]>(() =>
-    loadFromStorage("gadimat_checkbooks", MOCK_CHECKBOOKS)
-  );
-  const [checks, setChecks] = useState<Check[]>(() =>
-    loadFromStorage("gadimat_checks", MOCK_CHECKS)
-  );
-  const [partnerList, setPartnerList] = useState<PartnerListItem[]>(() =>
-    loadFromStorage("gadimat_partnerList", INITIAL_PARTNER_LIST)
-  );
-  const [users, setUsers] = useState<User[]>(() =>
-    loadFromStorage("gadimat_users", INITIAL_USERS)
-  );
-  const [currentUser, setCurrentUser] = useState<User | null>(() =>
-    loadFromStorage<User | null>("gadimat_currentUser", null)
-  );
+  const [initialized, setInitialized] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [checkbooks, setCheckbooks] = useState<Checkbook[]>([]);
+  const [checks, setChecks] = useState<Check[]>([]);
+  const [partnerList, setPartnerList] = useState<PartnerListItem[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const isAuthenticated = currentUser !== null;
 
-  // Auto-update overdue checks on mount
+  // On mount: restore session if token exists
   useEffect(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    setChecks(prev => prev.map(c => {
-      if (c.status === "En Circulation") {
-        const due = new Date(c.dueDate + "T00:00:00");
-        if (due < today) return { ...c, status: "En Retard" as CheckStatus };
-      }
-      return c;
-    }));
+    const token = localStorage.getItem('gadimat_token');
+    if (!token) { setInitialized(true); return; }
+
+    Promise.all([
+      api.get<User>('/auth/me'),
+      ...[] as never[],
+    ]).then(async ([user]) => {
+      setCurrentUser(user as User);
+      const [accounts, books, chks, partners, allUsers] = await loadAll();
+      setBankAccounts(accounts);
+      setCheckbooks(books);
+      setChecks(chks);
+      setPartnerList(partners);
+      setUsers(allUsers);
+    }).catch(() => {
+      localStorage.removeItem('gadimat_token');
+    }).finally(() => {
+      setInitialized(true);
+    });
   }, []);
 
-  const login = useCallback((email: string): string | null => {
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!user) return "Aucun utilisateur trouvé avec cet email.";
-    if (user.status === "Inactif") return "Ce compte est désactivé. Contactez l'administrateur.";
-    setCurrentUser(user);
-    localStorage.setItem("gadimat_currentUser", JSON.stringify(user));
-    return null;
-  }, [users]);
+  const login = useCallback(async (email: string, password: string): Promise<string | null> => {
+    try {
+      const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
+      localStorage.setItem('gadimat_token', token);
+      setCurrentUser(user);
+      const [accounts, books, chks, partners, allUsers] = await loadAll();
+      setBankAccounts(accounts);
+      setCheckbooks(books);
+      setChecks(chks);
+      setPartnerList(partners);
+      setUsers(allUsers);
+      return null;
+    } catch (err) {
+      return err instanceof Error ? err.message : 'Erreur de connexion';
+    }
+  }, []);
 
   const logout = useCallback(() => {
+    localStorage.removeItem('gadimat_token');
     setCurrentUser(null);
-    localStorage.removeItem("gadimat_currentUser");
+    setBankAccounts([]);
+    setCheckbooks([]);
+    setChecks([]);
+    setPartnerList([]);
+    setUsers([]);
   }, []);
 
-  useEffect(() => { localStorage.setItem("gadimat_bankAccounts", JSON.stringify(bankAccounts)); }, [bankAccounts]);
-  useEffect(() => { localStorage.setItem("gadimat_checkbooks", JSON.stringify(checkbooks)); }, [checkbooks]);
-  useEffect(() => { localStorage.setItem("gadimat_checks", JSON.stringify(checks)); }, [checks]);
-  useEffect(() => { localStorage.setItem("gadimat_partnerList", JSON.stringify(partnerList)); }, [partnerList]);
-  useEffect(() => { localStorage.setItem("gadimat_users", JSON.stringify(users)); }, [users]);
-
-  const addBankAccount = useCallback((data: { bankName: string; rib: string }) => {
-    const newAccount: BankAccount = {
-      id: `ba_${Date.now()}`,
-      companyId: "c1",
-      bankName: data.bankName,
-      rib: data.rib,
-      checkbooksCount: 0,
-      totals: { nonPaid: 0, paid: 0, cancelled: 0 },
-    };
-    setBankAccounts(prev => [...prev, newAccount]);
+  // Bank accounts
+  const addBankAccount = useCallback(async (data: { bankName: string; rib: string }) => {
+    try {
+      const account = await api.post<BankAccount>('/bank-accounts', data);
+      setBankAccounts(prev => [...prev, account]);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout du compte.');
+    }
   }, []);
 
-  const deleteBankAccount = useCallback((id: string) => {
+  const deleteBankAccount = useCallback(async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce compte bancaire ? Tous les carnets et chèques associés seront supprimés.")) return;
-    setBankAccounts(prev => prev.filter(a => a.id !== id));
-    setCheckbooks(prev => prev.filter(cb => cb.bankAccountId !== id));
-    setChecks(prev => prev.filter(c => c.bankAccountId !== id));
+    try {
+      await api.delete(`/bank-accounts/${id}`);
+      setBankAccounts(prev => prev.filter(a => a.id !== id));
+      setCheckbooks(prev => prev.filter(cb => cb.bankAccountId !== id));
+      setChecks(prev => prev.filter(c => c.bankAccountId !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
+    }
   }, []);
 
-  const addCheckbook = useCallback((data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => {
-    const start = parseInt(data.startNumber);
-    const end = parseInt(data.endNumber);
-    const total = !isNaN(start) && !isNaN(end) ? end - start + 1 : 0;
-    const newCheckbook: Checkbook = {
-      id: `cb_${Date.now()}`,
-      bankAccountId: data.bankAccountId,
-      bankName: data.bankName,
-      type: data.type,
-      creationDate: new Date().toISOString().split("T")[0],
-      startNumber: data.startNumber,
-      endNumber: data.endNumber,
-      remaining: total,
-      totals: { nonPaid: 0, paid: 0, cancelled: 0 },
-    };
-    setCheckbooks(prev => [...prev, newCheckbook]);
-    setBankAccounts(prev => prev.map(a =>
-      a.id === data.bankAccountId ? { ...a, checkbooksCount: a.checkbooksCount + 1 } : a
-    ));
+  const updateBankAccount = useCallback(async (id: string, data: { bankName: string; rib: string }) => {
+    try {
+      await api.put(`/bank-accounts/${id}`, data);
+      setBankAccounts(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+      setCheckbooks(prev => prev.map(cb => cb.bankAccountId === id ? { ...cb, bankName: data.bankName } : cb));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.');
+    }
   }, []);
 
-  const deleteCheckbook = useCallback((id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce carnet ?")) return;
-    const checkbook = checkbooks.find(cb => cb.id === id);
-    setCheckbooks(prev => prev.filter(cb => cb.id !== id));
-    if (checkbook) {
+  // Checkbooks
+  const addCheckbook = useCallback(async (data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => {
+    try {
+      const book = await api.post<Checkbook>('/checkbooks', data);
+      setCheckbooks(prev => [...prev, book]);
       setBankAccounts(prev => prev.map(a =>
-        a.id === checkbook.bankAccountId
-          ? { ...a, checkbooksCount: Math.max(0, a.checkbooksCount - 1) }
-          : a
+        a.id === data.bankAccountId ? { ...a, checkbooksCount: a.checkbooksCount + 1 } : a
       ));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout du carnet.');
+    }
+  }, []);
+
+  const deleteCheckbook = useCallback(async (id: string) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce carnet ?")) return;
+    try {
+      const book = checkbooks.find(cb => cb.id === id);
+      await api.delete(`/checkbooks/${id}`);
+      setCheckbooks(prev => prev.filter(cb => cb.id !== id));
+      if (book) {
+        setBankAccounts(prev => prev.map(a =>
+          a.id === book.bankAccountId ? { ...a, checkbooksCount: Math.max(0, a.checkbooksCount - 1) } : a
+        ));
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
     }
   }, [checkbooks]);
 
-  const addCheck = useCallback((data: {
-    bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string;
-    partnerName: string; emissionDate: string; dueDate: string; amount: number; facture?: string; note?: string
+  // Checks
+  const addCheck = useCallback(async (data: {
+    bankAccountId: string; checkbookId?: string; type: CheckType; number: string;
+    partnerId: string; partnerName: string; emissionDate: string; dueDate: string;
+    amount: number; facture?: string; note?: string;
   }) => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const due = new Date(data.dueDate + "T00:00:00");
-    let status: CheckStatus = "En Circulation";
-    if (due < now) status = "En Retard";
-
-    const newCheck: Check = {
-      id: `ch_${Date.now()}`,
-      bankAccountId: data.bankAccountId,
-      checkbookId: data.checkbookId,
-      type: data.type,
-      number: data.number,
-      partnerId: data.partnerId,
-      partnerName: data.partnerName,
-      emissionDate: data.emissionDate,
-      dueDate: data.dueDate,
-      amount: data.amount,
-      status,
-      facture: data.facture,
-      note: data.note,
-    };
-    setChecks(prev => [...prev, newCheck]);
-
-    if (data.checkbookId) {
-      setCheckbooks(prev => prev.map(c =>
-        c.id === data.checkbookId ? { ...c, remaining: Math.max(0, c.remaining - 1) } : c
-      ));
+    try {
+      const check = await api.post<Check>('/checks', data);
+      setChecks(prev => [check, ...prev]);
+      if (data.checkbookId) {
+        setCheckbooks(prev => prev.map(cb =>
+          cb.id === data.checkbookId ? { ...cb, remaining: Math.max(0, cb.remaining - 1) } : cb
+        ));
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout du chèque.');
     }
   }, []);
 
-  const updateCheck = useCallback((id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => {
-    setChecks(prev => prev.map(c => {
-      if (c.id !== id) return c;
-      const updated = { ...c, ...data };
-      if (data.dueDate && (updated.status === "En Circulation" || updated.status === "En Retard")) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const due = new Date(updated.dueDate + "T00:00:00");
-        updated.status = due < today ? "En Retard" : "En Circulation";
-      }
-      return updated;
-    }));
+  const updateCheck = useCallback(async (id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => {
+    try {
+      const result = await api.put<{ success: boolean; status: CheckStatus }>(`/checks/${id}`, data);
+      setChecks(prev => prev.map(c => c.id === id ? { ...c, ...data, status: result.status } : c));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.');
+    }
   }, []);
 
-  const updateCheckStatus = useCallback((id: string, status: CheckStatus) => {
-    setChecks(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+  const updateCheckStatus = useCallback(async (id: string, status: CheckStatus) => {
+    try {
+      await api.patch(`/checks/${id}/status`, { status });
+      setChecks(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour du statut.');
+    }
   }, []);
 
-  const updateBankAccount = useCallback((id: string, data: { bankName: string; rib: string }) => {
-    setBankAccounts(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
-    setCheckbooks(prev => prev.map(cb => cb.bankAccountId === id ? { ...cb, bankName: data.bankName } : cb));
-  }, []);
-
-  const deleteCheck = useCallback((id: string) => {
+  const deleteCheck = useCallback(async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce chèque ?")) return;
-    setChecks(prev => prev.filter(c => c.id !== id));
+    try {
+      await api.delete(`/checks/${id}`);
+      setChecks(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
+    }
   }, []);
 
-  const addPartnerListItem = useCallback((data: Omit<PartnerListItem, "id">) => {
-    setPartnerList(prev => {
-      const newId = prev.length > 0 ? Math.max(...prev.map(p => p.id)) + 1 : 1;
-      return [...prev, { ...data, id: newId }];
-    });
+  // Partners
+  const addPartnerListItem = useCallback(async (data: Omit<PartnerListItem, "id">) => {
+    try {
+      const partner = await api.post<PartnerListItem>('/partners', data);
+      setPartnerList(prev => [...prev, partner]);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout du partenaire.');
+    }
   }, []);
 
-  const updatePartnerListItem = useCallback((id: number, data: Partial<PartnerListItem>) => {
-    setPartnerList(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+  const updatePartnerListItem = useCallback(async (id: number, data: Partial<PartnerListItem>) => {
+    try {
+      await api.put(`/partners/${id}`, data);
+      setPartnerList(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.');
+    }
   }, []);
 
-  const deletePartnerListItem = useCallback((id: number) => {
+  const deletePartnerListItem = useCallback(async (id: number) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce partenaire ?")) return;
-    setPartnerList(prev => prev.filter(p => p.id !== id));
+    try {
+      await api.delete(`/partners/${id}`);
+      setPartnerList(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
+    }
   }, []);
 
-  const addUser = useCallback((data: Omit<User, "id">) => {
-    setUsers(prev => {
-      const newId = prev.length > 0 ? Math.max(...prev.map(u => u.id)) + 1 : 1;
-      return [...prev, { ...data, id: newId }];
-    });
+  // Users
+  const addUser = useCallback(async (data: Omit<User, "id"> & { password: string }) => {
+    try {
+      const user = await api.post<User>('/users', data);
+      setUsers(prev => [...prev, user]);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout de l\'utilisateur.');
+    }
   }, []);
 
-  const updateUser = useCallback((id: number, data: Partial<User>) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...data } : u));
+  const updateUser = useCallback(async (id: number, data: Partial<User> & { password?: string }) => {
+    try {
+      await api.put(`/users/${id}`, data);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, ...data } : u));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.');
+    }
   }, []);
 
-  const deleteUser = useCallback((id: number) => {
+  const deleteUser = useCallback(async (id: number) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return;
-    setUsers(prev => prev.filter(u => u.id !== id));
+    try {
+      await api.delete(`/users/${id}`);
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
+    }
   }, []);
 
-  const toggleUserStatus = useCallback((id: number) => {
-    setUsers(prev => prev.map(u =>
-      u.id === id ? { ...u, status: u.status === "Actif" ? "Inactif" : "Actif" } : u
-    ));
+  const toggleUserStatus = useCallback(async (id: number) => {
+    try {
+      await api.patch(`/users/${id}/toggle-status`);
+      setUsers(prev => prev.map(u =>
+        u.id === id ? { ...u, status: u.status === "Actif" ? "Inactif" : "Actif" } : u
+      ));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.');
+    }
   }, []);
 
   return (
     <AppContext.Provider value={{
       bankAccounts, checkbooks, checks, partnerList, users,
-      currentUser, isAuthenticated, login, logout,
-      addBankAccount, deleteBankAccount,
+      currentUser, isAuthenticated, initialized,
+      login, logout,
+      addBankAccount, deleteBankAccount, updateBankAccount,
       addCheckbook, deleteCheckbook,
       addCheck, updateCheck, updateCheckStatus, deleteCheck,
-      updateBankAccount,
       addPartnerListItem, updatePartnerListItem, deletePartnerListItem,
       addUser, updateUser, deleteUser, toggleUserStatus,
     }}>

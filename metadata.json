@@ -1,6 +1,0 @@
-{
-  "name": "Lbanka",
-  "description": "B2B SaaS check and bill of exchange management platform for Moroccan businesses.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

@@ -15,7 +15,8 @@ const PrintModule = lazy(() => import("./pages/PrintModule").then(m => ({ defaul
 const Guide = lazy(() => import("./pages/Guide").then(m => ({ default: m.Guide })));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, initialized } = useApp();
+  if (!initialized) return <LoadingFallback />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

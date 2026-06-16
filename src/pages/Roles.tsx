@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Plus, Shield, User as UserIcon, Edit2, Trash2, Power, Search, Bell, CheckSquare, Square } from "lucide-react";
+import { Plus, Shield, User as UserIcon, Edit2, Trash2, Power, Search } from "lucide-react";
 import { useApp, User } from "@/lib/AppContext";
-import { NewUserModal } from "@/components/NewUserModal";
+import { NewUserModal, type UserFormData } from "@/components/NewUserModal";
 
 export function Roles() {
   const { users, addUser, updateUser, deleteUser, toggleUserStatus } = useApp();
@@ -9,12 +9,6 @@ export function Roles() {
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"Tous" | "Administrateur" | "Comptable" | "Agent de saisie">("Tous");
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // Notification Preferences
-  const [notifyUnpaid, setNotifyUnpaid] = useState(true);
-  const [notifyReminder, setNotifyReminder] = useState(true);
-  const [reminderDays, setReminderDays] = useState("3");
-
   const filteredUsers = users.filter(u => {
     const matchesTab = activeTab === "Tous" || u.role === activeTab;
     const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -26,11 +20,11 @@ export function Roles() {
   const accountantCount = users.filter((u) => u.role === "Comptable").length;
   const agentCount = users.filter((u) => u.role === "Agent de saisie").length;
 
-  const handleSaveUser = (data: Omit<User, "id">) => {
+  const handleSaveUser = ({ password, ...data }: UserFormData) => {
     if (userToEdit) {
-      updateUser(userToEdit.id, data);
+      updateUser(userToEdit.id, password ? { ...data, password } : data);
     } else {
-      addUser(data);
+      addUser({ ...data, password });
     }
     setUserToEdit(null);
   };
@@ -177,57 +171,6 @@ export function Roles() {
         </div>
         <div className="px-4 py-3 flex items-center justify-between text-[11px] text-slate-500 bg-white border-t border-slate-100">
           <div>Affichage de 1 à {filteredUsers.length} sur {filteredUsers.length} entrées</div>
-        </div>
-      </div>
-
-      <div className="mt-8 mb-4">
-        <h2 className="text-[16px] font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <Bell className="w-5 h-5 text-slate-400" />
-          Paramètres de Notifications
-        </h2>
-        <p className="text-[12px] text-slate-500 m-0 mt-1">Configurez vos préférences d'alertes concernant les chèques.</p>
-      </div>
-
-      <div className="bg-white rounded-[12px] border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
-        <div className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
-          <div className="flex flex-col">
-            <span className="text-[13px] font-bold text-slate-800">Retour & Impayés</span>
-            <span className="text-[11px] text-slate-500">Me notifier lorsqu'un chèque est retourné ou marqué comme impayé.</span>
-          </div>
-          <button 
-            onClick={() => setNotifyUnpaid(!notifyUnpaid)}
-            className="bg-transparent border-none p-0 cursor-pointer text-primary"
-          >
-            {notifyUnpaid ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6 text-slate-300" />}
-          </button>
-        </div>
-
-        <div className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
-          <div className="flex flex-col">
-            <span className="text-[13px] font-bold text-slate-800">Rappel d'échéance</span>
-            <span className="text-[11px] text-slate-500">Me rappeler avant la date d'échéance d'un chèque.</span>
-          </div>
-          <div className="flex items-center gap-4">
-            {notifyReminder && (
-              <div className="flex items-center gap-2 text-[12px] font-medium text-slate-600">
-                <input 
-                  type="number" 
-                  min="1" 
-                  max="30" 
-                  value={reminderDays}
-                  onChange={(e) => setReminderDays(e.target.value)}
-                  className="w-14 px-2 py-1 border border-slate-200 rounded-[4px] text-center focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                Jours avant
-              </div>
-            )}
-            <button 
-              onClick={() => setNotifyReminder(!notifyReminder)}
-              className="bg-transparent border-none p-0 cursor-pointer text-primary"
-            >
-              {notifyReminder ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6 text-slate-300" />}
-            </button>
-          </div>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { formatMAD, cn, getBankLogo } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
 import { Check, CheckStatus } from "@/lib/types";
