@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { BankAccount, Checkbook, Check, CheckStatus, CheckType } from "./types";
+import { BankAccount, Checkbook, Check, CheckStatus, CheckType, Instance } from "./types";
 import { api } from "./api";
 
-export type UserRole = "Administrateur" | "Comptable" | "Agent de saisie";
+export type UserRole = "Administrateur" | "Utilisateur";
 export type UserStatus = "Actif" | "Inactif";
 
 export interface User {
@@ -31,6 +31,7 @@ interface AppContextType {
   checkbooks: Checkbook[];
   checks: Check[];
   partnerList: PartnerListItem[];
+  instances: Instance[];
   users: User[];
   currentUser: User | null;
   isAuthenticated: boolean;
@@ -49,6 +50,9 @@ interface AppContextType {
   addPartnerListItem: (data: Omit<PartnerListItem, "id">) => Promise<void>;
   updatePartnerListItem: (id: number, data: Partial<PartnerListItem>) => Promise<void>;
   deletePartnerListItem: (id: number) => Promise<void>;
+  addInstance: (data: Omit<Instance, "id">) => Promise<void>;
+  updateInstance: (id: number, data: Partial<Instance>) => Promise<void>;
+  deleteInstance: (id: number) => Promise<void>;
   addUser: (data: Omit<User, "id"> & { password: string }) => Promise<void>;
   updateUser: (id: number, data: Partial<User> & { password?: string }) => Promise<void>;
   deleteUser: (id: number) => Promise<void>;
@@ -64,6 +68,7 @@ async function loadAll() {
     api.get<Check[]>('/checks'),
     api.get<PartnerListItem[]>('/partners'),
     api.get<User[]>('/users'),
+    api.get<Instance[]>('/instances'),
   ]);
 }
 
@@ -73,32 +78,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [checkbooks, setCheckbooks] = useState<Checkbook[]>([]);
   const [checks, setChecks] = useState<Check[]>([]);
   const [partnerList, setPartnerList] = useState<PartnerListItem[]>([]);
+  const [instances, setInstances] = useState<Instance[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const isAuthenticated = currentUser !== null;
 
-  // On mount: restore session if token exists
+  // Restore authentication check and data loading
   useEffect(() => {
-    const token = localStorage.getItem('gadimat_token');
-    if (!token) { setInitialized(true); return; }
-
-    Promise.all([
-      api.get<User>('/auth/me'),
-      ...[] as never[],
-    ]).then(async ([user]) => {
-      setCurrentUser(user as User);
-      const [accounts, books, chks, partners, allUsers] = await loadAll();
-      setBankAccounts(accounts);
-      setCheckbooks(books);
-      setChecks(chks);
-      setPartnerList(partners);
-      setUsers(allUsers);
-    }).catch(() => {
-      localStorage.removeItem('gadimat_token');
-    }).finally(() => {
+    const initialize = async () => {
+      const token = localStorage.getItem('gadimat_token');
+      if (token) {
+        try {
+          const user = await api.get<User>('/auth/me');
+          setCurrentUser(user);
+          const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll();
+          setBankAccounts(accounts);
+          setCheckbooks(books);
+          setChecks(chks);
+          setPartnerList(partners);
+          setUsers(allUsers);
+          setInstances(allInstances);
+        } catch (err) {
+          console.error("Authentication failed:", err);
+          localStorage.removeItem('gadimat_token');
+          setCurrentUser(null);
+        }
+      }
       setInitialized(true);
-    });
+    };
+
+    initialize();
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
@@ -106,12 +116,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
       localStorage.setItem('gadimat_token', token);
       setCurrentUser(user);
-      const [accounts, books, chks, partners, allUsers] = await loadAll();
+      const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll();
       setBankAccounts(accounts);
       setCheckbooks(books);
       setChecks(chks);
       setPartnerList(partners);
       setUsers(allUsers);
+      setInstances(allInstances);
       return null;
     } catch (err) {
       return err instanceof Error ? err.message : 'Erreur de connexion';
@@ -126,6 +137,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setChecks([]);
     setPartnerList([]);
     setUsers([]);
+    setInstances([]);
   }, []);
 
   // Bank accounts
@@ -203,6 +215,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           cb.id === data.checkbookId ? { ...cb, remaining: Math.max(0, cb.remaining - 1) } : cb
         ));
       }
+      if (check.status === 'Payé' && check.facture) {
+        setInstances(insts => insts.map(inst => {
+          if (inst.facture === check.facture) {
+            return { ...inst, paymentDate: check.dueDate };
+          }
+          return inst;
+        }));
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout du chèque.');
     }
@@ -211,7 +231,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateCheck = useCallback(async (id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => {
     try {
       const result = await api.put<{ success: boolean; status: CheckStatus }>(`/checks/${id}`, data);
-      setChecks(prev => prev.map(c => c.id === id ? { ...c, ...data, status: result.status } : c));
+      setChecks(prev => prev.map(c => {
+        if (c.id === id) {
+          const updated = { ...c, ...data, status: result.status };
+          const finalFacture = updated.facture || c.facture;
+          if (finalFacture) {
+            setInstances(insts => insts.map(inst => {
+              if (inst.facture === finalFacture) {
+                if (updated.status === 'Payé') {
+                  return { ...inst, paymentDate: updated.dueDate };
+                } else if (c.status === 'Payé') {
+                  return { ...inst, paymentDate: null };
+                }
+              }
+              return inst;
+            }));
+          }
+          return updated;
+        }
+        return c;
+      }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.');
     }
@@ -220,7 +259,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateCheckStatus = useCallback(async (id: string, status: CheckStatus) => {
     try {
       await api.patch(`/checks/${id}/status`, { status });
-      setChecks(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+      setChecks(prev => prev.map(c => {
+        if (c.id === id) {
+          if (c.facture) {
+            setInstances(insts => insts.map(inst => {
+              if (inst.facture === c.facture) {
+                if (status === 'Payé') {
+                  return { ...inst, paymentDate: c.dueDate };
+                } else if (c.status === 'Payé') {
+                  return { ...inst, paymentDate: null };
+                }
+              }
+              return inst;
+            }));
+          }
+          return { ...c, status };
+        }
+        return c;
+      }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour du statut.');
     }
@@ -230,7 +286,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce chèque ?")) return;
     try {
       await api.delete(`/checks/${id}`);
-      setChecks(prev => prev.filter(c => c.id !== id));
+      setChecks(prev => {
+        const check = prev.find(c => c.id === id);
+        if (check && check.status === 'Payé' && check.facture) {
+          setInstances(insts => insts.map(inst => {
+            if (inst.facture === check.facture) {
+              return { ...inst, paymentDate: null };
+            }
+            return inst;
+          }));
+        }
+        return prev.filter(c => c.id !== id);
+      });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
     }
@@ -305,15 +372,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Instances
+  const addInstance = useCallback(async (data: Omit<Instance, "id">) => {
+    try {
+      const instance = await api.post<Instance>('/instances', data);
+      setInstances(prev => [instance, ...prev]);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout de la facture en instance.');
+    }
+  }, []);
+
+  const updateInstance = useCallback(async (id: number, data: Partial<Instance>) => {
+    try {
+      await api.put(`/instances/${id}`, data);
+      setInstances(prev => prev.map(inst => inst.id === id ? { ...inst, ...data } : inst));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour.');
+    }
+  }, []);
+
+  const deleteInstance = useCallback(async (id: number) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette facture en instance ?")) return;
+    try {
+      await api.delete(`/instances/${id}`);
+      setInstances(prev => prev.filter(inst => inst.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression.');
+    }
+  }, []);
+
   return (
     <AppContext.Provider value={{
-      bankAccounts, checkbooks, checks, partnerList, users,
+      bankAccounts, checkbooks, checks, partnerList, instances, users,
       currentUser, isAuthenticated, initialized,
       login, logout,
       addBankAccount, deleteBankAccount, updateBankAccount,
       addCheckbook, deleteCheckbook,
       addCheck, updateCheck, updateCheckStatus, deleteCheck,
       addPartnerListItem, updatePartnerListItem, deletePartnerListItem,
+      addInstance, updateInstance, deleteInstance,
       addUser, updateUser, deleteUser, toggleUserStatus,
     }}>
       {children}

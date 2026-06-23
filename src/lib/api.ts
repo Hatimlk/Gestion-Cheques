@@ -10,6 +10,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   });
+  if (res.status === 401) {
+    localStorage.removeItem('gadimat_token');
+    window.location.href = '/login';
+    throw new Error('Session expirée. Veuillez vous reconnecter.');
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: 'Erreur réseau' }));
     throw new Error(body.error || `Erreur ${res.status}`);

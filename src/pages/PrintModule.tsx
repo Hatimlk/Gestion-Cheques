@@ -48,11 +48,11 @@ export function PrintModule() {
   const location = useLocation();
   const { addCheck, bankAccounts } = useApp();
 
-  const [bankType, setBankType] = useState("ATTIJARIWAFA BANK - Chèque");
+  const [bankType, setBankType] = useState("BANQUE POPULAIRE - Chèque");
   const [amount, setAmount] = useState("");
   const [amountLetters, setAmountLetters] = useState("");
   const [payee, setPayee] = useState("");
-  const [place, setPlace] = useState("");
+  const [place, setPlace] = useState("Agadir");
   const [date, setDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [cause, setCause] = useState("");
@@ -165,7 +165,7 @@ export function PrintModule() {
   };
 
   const elements = [
-    { id: 'amountLetters' as ElementId, text: amountLetters || "Montant en lettres", className: `font-bold uppercase text-[13px] ${isEffet ? 'w-[220px] text-center leading-tight' : ''}` },
+    { id: 'amountLetters' as ElementId, text: amountLetters || "Montant en lettres", className: `font-bold uppercase text-[13px] leading-tight ${isEffet ? 'w-[220px] text-center' : 'w-[400px]'}` },
     { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[17px] tracking-wider" },
     { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[14px]" },
     { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[14px]" },
@@ -337,7 +337,7 @@ export function PrintModule() {
               onDragEnd={(e, info) => handleDragEnd(el.id, info)}
               initial={{ x: positions[el.id].x, y: positions[el.id].y }}
               animate={{ x: positions[el.id].x, y: positions[el.id].y }}
-              className={`absolute cursor-move print:cursor-default text-slate-800 ${isEffet && el.id === 'amountLetters' ? 'whitespace-normal' : 'whitespace-nowrap'} px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 print:border-none print:bg-transparent print:p-0 ${el.className}`}
+              className={`absolute cursor-move print:cursor-default text-slate-800 ${el.id === 'amountLetters' ? 'whitespace-normal' : 'whitespace-nowrap'} px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 print:border-none print:bg-transparent print:p-0 ${el.className}`}
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >
               {el.text}

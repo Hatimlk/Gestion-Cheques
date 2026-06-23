@@ -8,10 +8,16 @@ interface NewCheckModalProps {
   isOpen: boolean;
   onClose: () => void;
   editCheck?: Check | null;
+  prefillData?: {
+    facture: string;
+    partnerName: string;
+    amount: number;
+    type: CheckType;
+  } | null;
 }
 
-export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps) {
-  const { addCheck, updateCheck, bankAccounts, checkbooks } = useApp();
+export function NewCheckModal({ isOpen, onClose, editCheck, prefillData }: NewCheckModalProps) {
+  const { addCheck, updateCheck, bankAccounts, checkbooks, instances } = useApp();
   
   const [docType, setDocType] = useState<CheckType | "">("");
   const [amount, setAmount] = useState("");
@@ -26,6 +32,9 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
   const [isCancelled, setIsCancelled] = useState(false);
   const [facture, setFacture] = useState("");
   const [note, setNote] = useState("");
+  const [invoiceInputType, setInvoiceInputType] = useState<"select" | "text">("select");
+
+  const pendingInvoices = instances.filter(inst => !inst.paymentDate);
 
   useEffect(() => {
     if (editCheck) {
@@ -38,20 +47,39 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
       setEmissionDate(editCheck.emissionDate ? new Date(editCheck.emissionDate) : null);
       setDueDate(editCheck.dueDate ? new Date(editCheck.dueDate) : null);
       setIsCancelled(editCheck.status === "Annulé");
+      setFacture(editCheck.facture || "");
+      setNote(editCheck.note || "");
+      setInvoiceInputType("text");
+    } else if (prefillData) {
+      setDocType(prefillData.type);
+      setAmount(String(prefillData.amount));
+      setBeneficiary(prefillData.partnerName);
+      setCheckNumber("");
+      const bpAccount = bankAccounts.find(a => a.bankName.toUpperCase().includes("POPULAIRE") || a.bankName.toUpperCase().includes("BP"));
+      setBankAccountId(bpAccount ? bpAccount.id : (bankAccounts[0]?.id || ""));
+      setCheckbookId("");
+      setEmissionDate(null);
+      setDueDate(null);
+      setIsCancelled(false);
+      setFacture(prefillData.facture);
+      setNote("");
+      setInvoiceInputType("select");
     } else {
       setDocType("");
       setAmount("");
       setBeneficiary("");
       setCheckNumber("");
-      setBankAccountId("");
+      const bpAccount = bankAccounts.find(a => a.bankName.toUpperCase().includes("POPULAIRE") || a.bankName.toUpperCase().includes("BP"));
+      setBankAccountId(bpAccount ? bpAccount.id : (bankAccounts[0]?.id || ""));
       setCheckbookId("");
       setEmissionDate(null);
       setDueDate(null);
       setIsCancelled(false);
       setFacture("");
       setNote("");
+      setInvoiceInputType("select");
     }
-  }, [editCheck, isOpen]);
+  }, [editCheck, prefillData, isOpen]);
 
   if (!isOpen) return null;
 
@@ -80,6 +108,8 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
         emissionDate: emDate,
         dueDate: dDate,
         amount: num,
+        facture: facture || undefined,
+        note: note || undefined,
       });
     } else {
       addCheck({
@@ -92,6 +122,8 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
         emissionDate: emDate,
         dueDate: dDate,
         amount: num,
+        facture: facture || undefined,
+        note: note || undefined,
       });
     }
     onClose();
@@ -206,13 +238,56 @@ export function NewCheckModal({ isOpen, onClose, editCheck }: NewCheckModalProps
                 />
               </div>
               <div className="h-[46px]">
-                <input 
-                  type="text" 
-                  placeholder="Facture (facultatif)" 
-                  value={facture} 
-                  onChange={e => setFacture(e.target.value)} 
-                  className="w-full h-full px-4 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 placeholder:text-slate-400" 
-                />
+                {invoiceInputType === "select" ? (
+                  <div className="relative h-full">
+                    <select 
+                      className="w-full h-full px-4 pr-12 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 bg-white appearance-none outline-none focus:border-slate-400"
+                      value={facture}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setFacture(val);
+                        const matchingInst = pendingInvoices.find(inst => inst.facture === val);
+                        if (matchingInst) {
+                          setBeneficiary(matchingInst.partnerName);
+                          setAmount(String(matchingInst.amount));
+                          setDocType(matchingInst.mdp === "Effet" ? "Effet" : "Chèque");
+                        }
+                      }}
+                    >
+                      <option value="">Associer à une facture (Optionnel)</option>
+                      {pendingInvoices.map(inst => (
+                        <option key={inst.id} value={inst.facture}>
+                          {inst.facture} - {inst.partnerName} ({inst.amount} MAD)
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-12 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <button 
+                      type="button"
+                      onClick={() => setInvoiceInputType("text")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-blue-600 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                    >
+                      Saisir
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative h-full">
+                    <input 
+                      type="text" 
+                      placeholder="Facture N° (facultatif)" 
+                      value={facture} 
+                      onChange={e => setFacture(e.target.value)} 
+                      className="w-full h-full px-4 pr-16 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 placeholder:text-slate-400" 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setInvoiceInputType("select")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-blue-600 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                    >
+                      Choisir
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

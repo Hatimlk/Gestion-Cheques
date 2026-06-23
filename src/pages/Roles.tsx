@@ -7,7 +7,7 @@ export function Roles() {
   const { users, addUser, updateUser, deleteUser, toggleUserStatus } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<"Tous" | "Administrateur" | "Comptable" | "Agent de saisie">("Tous");
+  const [activeTab, setActiveTab] = useState<"Tous" | "Administrateur" | "Utilisateur">("Tous");
   const [searchQuery, setSearchQuery] = useState("");
   const filteredUsers = users.filter(u => {
     const matchesTab = activeTab === "Tous" || u.role === activeTab;
@@ -17,8 +17,7 @@ export function Roles() {
   });
 
   const adminCount = users.filter((u) => u.role === "Administrateur").length;
-  const accountantCount = users.filter((u) => u.role === "Comptable").length;
-  const agentCount = users.filter((u) => u.role === "Agent de saisie").length;
+  const userCount = users.filter((u) => u.role === "Utilisateur").length;
 
   const handleSaveUser = ({ password, ...data }: UserFormData) => {
     if (userToEdit) {
@@ -54,7 +53,7 @@ export function Roles() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white p-4 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
             <Shield className="w-6 h-6" />
@@ -65,21 +64,12 @@ export function Roles() {
           </div>
         </div>
         <div className="bg-white p-4 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-            <UserIcon className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-[12px] font-medium text-slate-500">Comptables</div>
-            <div className="text-[18px] font-bold text-slate-900">{accountantCount}</div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 shrink-0">
             <UserIcon className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-[12px] font-medium text-slate-500">Agents de saisie</div>
-            <div className="text-[18px] font-bold text-slate-900">{agentCount}</div>
+            <div className="text-[12px] font-medium text-slate-500">Utilisateurs</div>
+            <div className="text-[18px] font-bold text-slate-900">{userCount}</div>
           </div>
         </div>
       </div>
@@ -87,7 +77,7 @@ export function Roles() {
       <div className="bg-white rounded-[12px] border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center bg-slate-100 p-0.5 rounded-[6px]">
-            {["Tous", "Administrateur", "Comptable", "Agent de saisie"].map(tab => (
+            {["Tous", "Administrateur", "Utilisateur"].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -95,7 +85,7 @@ export function Roles() {
                   activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >
-                {tab === "Tous" ? tab : tab === "Agent de saisie" ? "Agent" : tab}
+                {tab}
               </button>
             ))}
           </div>

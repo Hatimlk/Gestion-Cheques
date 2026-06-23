@@ -1,15 +1,12 @@
 import { useState } from "react";
 import { formatMAD, cn, getBankLogo } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
-import { Check, CheckStatus } from "@/lib/types";
+import { Check } from "@/lib/types";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, Plus, Printer, Pencil, Eye,
-  FileText, RefreshCw, Bell, FileCheck, FileX,
-  ChevronDown, Send, Calendar, Download, FileUp, Filter,
-  Check as CheckIcon, X, Share
+  Search, Printer, Eye, Pencil, Check as CheckIcon, X,
+  FileText, RefreshCw, ChevronDown, Share, FileCheck, FileX
 } from "lucide-react";
-import { NewCheckModal } from "@/components/NewCheckModal";
 import { ViewCheckModal } from "@/components/ViewCheckModal";
 import { DatePicker } from "@/components/DatePicker";
 
@@ -46,38 +43,12 @@ const maskRib = (rib: string) => {
   return clean.length >= 8 ? `${clean.substring(0, 4)}xxx${clean.substring(clean.length - 4)}` : rib;
 };
 
-const getEcheanceBadge = (dueDate: string, status: string) => {
-  if (status === "Payé") {
-    return <span className="inline-flex items-center gap-1 bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-[10px] font-bold"><FileCheck className="w-3 h-3" /> Payé</span>;
-  }
-  if (status === "Annulé") {
-    return <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px] font-bold">Annulé</span>;
-  }
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate + "T00:00:00");
-  const diff = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diff < 0) {
-    return <span className="inline-flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-bold"><Bell className="w-3 h-3" /> {Math.abs(diff)}j retard</span>;
-  }
-  if (diff === 0) {
-    return <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-[10px] font-bold"><Bell className="w-3 h-3" /> Aujourd'hui</span>;
-  }
-  const months = Math.floor(diff / 30);
-  const days = diff % 30;
-  const label = months > 0 ? `${months}m ${days}j` : `+${diff}j`;
-  return <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-[10px] font-bold"><RefreshCw className="w-3 h-3" /> {label}</span>;
-};
-
-export function IssuedChecks() {
-  const { checks, bankAccounts, updateCheckStatus, deleteCheck } = useApp();
+export function RegleChecks() {
+  const { checks, bankAccounts, updateCheckStatus } = useApp();
   const navigate = useNavigate();
-  const [activeStatus, setActiveStatus] = useState<string>("Tous");
-  const [isNewCheckModalOpen, setIsNewCheckModalOpen] = useState(false);
   const [checkToView, setCheckToView] = useState<Check | null>(null);
-  const [checkToEdit, setCheckToEdit] = useState<Check | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("status");
+  const [sortBy, setSortBy] = useState("date");
   const [actionMenuOpenId, setActionMenuOpenId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -85,23 +56,24 @@ export function IssuedChecks() {
   const [selectedCheckIds, setSelectedCheckIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string>("Tous");
 
-  const emittedChecks = checks.filter(c => c.status !== "Payé");
+  // Filter only paid (Réglé) checks
+  const regleChecks = checks.filter(c => c.status === "Payé");
 
-  const checksEnCirculation = emittedChecks.filter(c => c.status === "En Circulation");
-  const checksEnRetard = emittedChecks.filter(c => c.status === "En Retard");
-  const checksAnnule = emittedChecks.filter(c => c.status === "Annulé");
-
-  const filteredChecks = emittedChecks.filter(c => {
-    const matchesStatus = activeStatus === "Tous" || c.status === activeStatus;
+  const filteredChecks = regleChecks.filter(c => {
     const matchesType = typeFilter === "Tous" || c.type === typeFilter;
     const matchesSearch = c.partnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           c.number.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesType && matchesSearch;
+    
+    // Date range filter
+    if (startDate || endDate) {
+      const checkDate = new Date(c.emissionDate);
+      if (startDate && checkDate < startDate) return false;
+      if (endDate && checkDate > endDate) return false;
+    }
+
+    return matchesType && matchesSearch;
   }).sort((a, b) => {
-    if (sortBy === "status") {
-      const weight: Record<string, number> = { "En Retard": 0, "En Circulation": 1, "Déposé": 2, "Impayé": 3, "Payé": 4, "Annulé": 5 };
-      return (weight[a.status] ?? 99) - (weight[b.status] ?? 99);
-    } else if (sortBy === "date") {
+    if (sortBy === "date") {
       return new Date(b.emissionDate).getTime() - new Date(a.emissionDate).getTime();
     } else if (sortBy === "code") {
       return a.number.localeCompare(b.number);
@@ -109,12 +81,9 @@ export function IssuedChecks() {
     return 0;
   });
 
-  const totalEmitted = emittedChecks.reduce((s, c) => s + c.amount, 0);
-  const totalEnCirculation = checksEnCirculation.reduce((s, c) => s + c.amount, 0);
-  const totalEnRetard = checksEnRetard.reduce((s, c) => s + c.amount, 0);
-  const totalAnnule = checksAnnule.reduce((s, c) => s + c.amount, 0);
-
-  const statusOptions: CheckStatus[] = ["En Circulation", "En Retard", "Déposé", "Impayé", "Payé", "Annulé"];
+  const totalRegle = regleChecks.reduce((s, c) => s + c.amount, 0);
+  const totalCheques = regleChecks.filter(c => c.type === "Chèque").reduce((s, c) => s + c.amount, 0);
+  const totalEffets = regleChecks.filter(c => c.type === "Effet").reduce((s, c) => s + c.amount, 0);
 
   const handlePrint = (check: Check) => {
     const account = bankAccounts.find(a => a.id === check.bankAccountId);
@@ -130,12 +99,6 @@ export function IssuedChecks() {
         type: check.type,
       }
     });
-  };
-
-  const handleDeposer = (check: Check) => {
-    if (check.status === "En Circulation" || check.status === "En Retard") {
-      updateCheckStatus(check.id, "Déposé");
-    }
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,7 +149,7 @@ export function IssuedChecks() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `export_cheques_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `export_cheques_regles_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -194,7 +157,6 @@ export function IssuedChecks() {
   };
 
   const handleExportExcel = () => {
-    // For french locales, Excel uses semicolon as delimiter by default for CSV
     handleExportCSV(';');
   };
 
@@ -223,7 +185,7 @@ export function IssuedChecks() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Export Chèques</title>
+          <title>Export Chèques Réglés</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
@@ -232,7 +194,7 @@ export function IssuedChecks() {
           </style>
         </head>
         <body>
-          <h1>Liste des Chèques/Effets Émis</h1>
+          <h1>Liste des Chèques/Effets Réglés (Payés)</h1>
           <p>Généré le: ${new Date().toLocaleDateString('fr-FR')}</p>
           <table>
             <thead>
@@ -272,98 +234,54 @@ export function IssuedChecks() {
     <div className="space-y-6 max-w-[1400px] mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[22px] mb-1 font-bold text-slate-900 tracking-tight">Chèques/Effets Émis</h1>
+          <h1 className="text-[22px] mb-1 font-bold text-slate-900 tracking-tight">Chèques/Effets Réglés</h1>
           <div className="text-[12px] text-slate-500 font-medium flex items-center gap-2">
             <span>Tableau de Bord</span>
             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-            <span>Chèques/Effets Émis</span>
+            <span>Chèques/Effets Réglés</span>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setIsNewCheckModalOpen(true)} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-[6px] text-[13px] font-semibold hover:opacity-90 transition shadow-sm border-none cursor-pointer">
-            <Plus className="w-4 h-4" />
-            Nouveau Valeur Émis
-          </button>
         </div>
       </div>
 
       {/* Stats Row */}
-      <div className="bg-white rounded-[12px] border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch overflow-hidden">
-        <div className="flex-1 flex items-center gap-4 px-6 py-5 border-b md:border-b-0 md:border-r border-slate-100 min-w-[200px]">
-          <div className="w-12 h-12 rounded-full border-[2px] border-cyan-100 bg-cyan-50 text-cyan-500 flex items-center justify-center shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-[2px] border-green-100 bg-green-50 text-green-500 flex items-center justify-center shrink-0">
+            <FileCheck className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[13px] font-bold text-slate-800">Total Réglé</span>
+            <span className="text-[11px] font-medium text-slate-500">{regleChecks.length} Valeurs</span>
+            <span className="text-[16px] font-bold text-slate-900 mt-0.5">{formatMAD(totalRegle)}</span>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-[2px] border-blue-100 bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
             <FileText className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <span className="text-[13px] font-bold text-slate-800">Total Émis</span>
-            <span className="text-[11px] font-medium text-slate-500">{emittedChecks.length} Valeurs</span>
-            <span className="text-[14px] font-bold text-slate-900 mt-0.5">{formatMAD(totalEmitted).replace('MAD', '').trim()} MAD</span>
+            <span className="text-[13px] font-bold text-slate-800 font-sans">Chèques Payés</span>
+            <span className="text-[11px] font-medium text-slate-500">{regleChecks.filter(c => c.type === "Chèque").length} Chèques</span>
+            <span className="text-[16px] font-bold text-slate-900 mt-0.5">{formatMAD(totalCheques)}</span>
           </div>
         </div>
-        <div className="flex-1 flex items-center gap-4 px-6 py-5 border-b md:border-b-0 md:border-r border-slate-100 min-w-[200px]">
+        <div className="bg-white p-5 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-full border-[2px] border-orange-100 bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
             <RefreshCw className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <span className="text-[13px] font-bold text-slate-800">En Circulation</span>
-            <span className="text-[11px] font-medium text-slate-500">{checksEnCirculation.length} Valeurs</span>
-            <span className="text-[14px] font-bold text-slate-900 mt-0.5">{formatMAD(totalEnCirculation).replace('MAD', '').trim()} MAD</span>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center gap-4 px-6 py-5 border-b md:border-b-0 md:border-r border-slate-100 min-w-[200px]">
-          <div className="w-12 h-12 rounded-full border-[2px] border-red-100 bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-            <Bell className="w-5 h-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[13px] font-bold text-slate-800">En Retard</span>
-            <span className="text-[11px] font-medium text-slate-500">{checksEnRetard.length} Valeurs</span>
-            <span className="text-[14px] font-bold text-slate-900 mt-0.5">{formatMAD(totalEnRetard).replace('MAD', '').trim()} MAD</span>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center gap-4 px-6 py-5 min-w-[200px]">
-          <div className="w-12 h-12 rounded-full border-[2px] border-slate-200 bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-            <FileX className="w-5 h-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[13px] font-bold text-slate-800">Annulé</span>
-            <span className="text-[11px] font-medium text-slate-500">{checksAnnule.length} Valeurs</span>
-            <span className="text-[14px] font-bold text-slate-900 mt-0.5">{formatMAD(totalAnnule).replace('MAD', '').trim()} MAD</span>
+            <span className="text-[13px] font-bold text-slate-800">Effets Payés</span>
+            <span className="text-[11px] font-medium text-slate-500">{regleChecks.filter(c => c.type === "Effet").length} Effets</span>
+            <span className="text-[16px] font-bold text-slate-900 mt-0.5">{formatMAD(totalEffets)}</span>
           </div>
         </div>
       </div>
 
       {/* Main Table Container */}
       <div className="bg-white rounded-[12px] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        {/* Tabs */}
-        <div className="px-6 flex items-center gap-6 border-b border-slate-100 bg-white pt-2">
-          {["Tous", "En Circulation", "En Retard", "Annulé"].map(status => (
-            <button
-              key={status}
-              onClick={() => setActiveStatus(status)}
-              className={`pb-3 pt-2 text-[13px] font-bold transition-all duration-200 border-none cursor-pointer border-b-[3px] bg-transparent flex items-center gap-2 ${
-                activeStatus === status ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              {status}
-              <span className={`px-2 py-0.5 rounded-[4px] text-[11px] font-bold ${
-                status === "Tous" ? "bg-slate-900 text-white" :
-                status === "En Circulation" ? "bg-orange-100 text-orange-700" :
-                status === "En Retard" ? "bg-red-100 text-red-700" :
-                "bg-slate-100 text-slate-600"
-              }`}>
-                {status === "Tous" ? emittedChecks.length :
-                 status === "En Circulation" ? checksEnCirculation.length :
-                 status === "En Retard" ? checksEnRetard.length :
-                 checksAnnule.length}
-              </span>
-            </button>
-          ))}
-        </div>
-
         {/* Filters */}
         <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white filters-bar">
           <div className="flex flex-wrap items-center gap-3 flex-1">
-
-
             <DatePicker 
               label="Date de début" 
               value={startDate} 
@@ -397,7 +315,6 @@ export function IssuedChecks() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-[6px] text-[12px] font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent"
               >
-                <option value="status">Statut (retard d'abord)</option>
                 <option value="date">Date de création</option>
                 <option value="code">Code du chèque (A-Z)</option>
               </select>
@@ -475,7 +392,6 @@ export function IssuedChecks() {
                 const bankName = account?.bankName || "Inconnu";
                 const rib = account?.rib || "";
                 const logoPath = getBankLogo(bankName);
-                const canDeposer = check.status === "En Circulation" || check.status === "En Retard";
 
                 return (
                   <tr key={check.id} className="hover:bg-slate-50/50 transition-colors">
@@ -505,32 +421,19 @@ export function IssuedChecks() {
                               <div className="absolute left-8 top-1/2 -translate-y-1/2 z-40 bg-white rounded-[12px] shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-slate-100 py-2 w-40 flex flex-col gap-1" onClick={e => e.stopPropagation()}>
                                 <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-l border-b border-slate-100 rotate-45"></div>
                                 
-                                {check.status !== 'Payé' && (
-                                  <button onClick={() => { updateCheckStatus(check.id, 'Payé'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
-                                    <div className="w-4 h-4 rounded-full bg-green-500 text-white flex items-center justify-center shrink-0">
-                                      <CheckIcon className="w-2.5 h-2.5" strokeWidth={3} />
-                                    </div>
-                                    <span className="text-green-500 text-[11px] font-bold">Payé</span>
-                                  </button>
-                                )}
-                                
-                                {check.status !== 'En Circulation' && (
-                                  <button onClick={() => { updateCheckStatus(check.id, 'En Circulation'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
-                                    <div className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center shrink-0">
-                                      <RefreshCw className="w-2.5 h-2.5" strokeWidth={3} />
-                                    </div>
-                                    <span className="text-orange-500 text-[11px] font-bold">En Circulation</span>
-                                  </button>
-                                )}
+                                <button onClick={() => { updateCheckStatus(check.id, 'En Circulation'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
+                                  <div className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center shrink-0">
+                                    <RefreshCw className="w-2.5 h-2.5" strokeWidth={3} />
+                                  </div>
+                                  <span className="text-orange-500 text-[11px] font-bold">Réactiver (Circulation)</span>
+                                </button>
 
-                                {check.status !== 'Annulé' && (
-                                  <button onClick={() => { updateCheckStatus(check.id, 'Annulé'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
-                                    <div className="w-4 h-4 rounded-full bg-slate-400 text-white flex items-center justify-center shrink-0">
-                                      <X className="w-2.5 h-2.5" strokeWidth={3} />
-                                    </div>
-                                    <span className="text-slate-500 text-[11px] font-bold">Annulé</span>
-                                  </button>
-                                )}
+                                <button onClick={() => { updateCheckStatus(check.id, 'Annulé'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
+                                  <div className="w-4 h-4 rounded-full bg-slate-400 text-white flex items-center justify-center shrink-0">
+                                    <X className="w-2.5 h-2.5" strokeWidth={3} />
+                                  </div>
+                                  <span className="text-slate-500 text-[11px] font-bold">Annuler</span>
+                                </button>
                               </div>
                             </>
                           )}
@@ -580,28 +483,24 @@ export function IssuedChecks() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-col items-start gap-1">
-                        {getEcheanceBadge(check.dueDate, check.status)}
+                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          <FileCheck className="w-3 h-3" /> Réglé (Payé)
+                        </span>
                         <span className="text-slate-500 font-medium text-[11px]">{check.dueDate}</span>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-col items-start gap-1">
                         <span className="font-bold text-slate-800 text-[12px]">{formatMAD(check.amount)}</span>
-                        <div className="flex items-center gap-1 text-slate-400 text-[10px] font-medium cursor-pointer">
-                          {check.facture ? `Facture : ${check.facture}` : 'service'} <ChevronDown className="w-3 h-3" />
+                        <div className="flex items-center gap-1 text-slate-400 text-[10px] font-medium">
+                          {check.facture ? `Facture : ${check.facture}` : 'service'}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-col items-end sm:items-start gap-1">
-                        <span className={cn("px-3 py-1.5 rounded-full text-[11px] font-bold inline-block min-w-[90px] text-center",
-                          check.status === 'En Retard' ? 'bg-red-50 text-red-600' :
-                          check.status === 'En Circulation' ? 'bg-orange-50 text-orange-600' :
-                          check.status === 'Payé' ? 'bg-green-50 text-green-600' :
-                          check.status === 'Déposé' ? 'bg-blue-50 text-blue-600' :
-                          'bg-slate-100 text-slate-600'
-                        )}>
-                          {check.status}
+                        <span className="px-3 py-1.5 rounded-full text-[11px] font-bold inline-block min-w-[90px] text-center bg-green-50 text-green-600">
+                          Payé
                         </span>
                         {check.note && (
                           <span className="text-slate-400 font-medium text-[10px] truncate max-w-[120px]" title={check.note}>
@@ -616,48 +515,15 @@ export function IssuedChecks() {
               {filteredChecks.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-slate-500">
-                    Aucun chèque/effet trouvé.
+                    Aucun chèque/effet réglé trouvé.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-
-        <div className="px-6 py-4 flex items-center justify-between text-[11px] text-slate-500 bg-white border-t border-slate-100">
-          <div className="flex items-center gap-3">
-            {/* Toggle Switch */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <div className="relative">
-                <input type="checkbox" className="sr-only peer" />
-                <div className="w-8 h-4.5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
-              </div>
-              <span className="font-bold text-slate-600">Compact</span>
-            </label>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-slate-600">Lignes par page :</span>
-              <div className="flex items-center gap-1 font-bold text-slate-800 cursor-pointer">
-                25 <ChevronDown className="w-3 h-3" />
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="font-medium text-slate-600">1-4 sur 4</span>
-              <div className="flex items-center gap-2">
-                <button className="text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer p-0">
-                  <ChevronDown className="w-4 h-4 rotate-90" />
-                </button>
-                <button className="text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer p-0">
-                  <ChevronDown className="w-4 h-4 -rotate-90" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
-      <NewCheckModal isOpen={isNewCheckModalOpen || !!checkToEdit} onClose={() => { setIsNewCheckModalOpen(false); setCheckToEdit(null); }} editCheck={checkToEdit} />
       <ViewCheckModal check={checkToView} onClose={() => setCheckToView(null)} />
     </div>
   );

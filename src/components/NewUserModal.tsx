@@ -1,7 +1,7 @@
 import { X, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect, type FormEvent } from "react";
 
-export type UserRole = "Administrateur" | "Comptable" | "Agent de saisie";
+export type UserRole = "Administrateur" | "Utilisateur";
 export type UserStatus = "Actif" | "Inactif";
 
 export interface User {
@@ -26,7 +26,7 @@ export function NewUserModal({ isOpen, onClose, onSave, editUser }: NewUserModal
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<UserRole>("Agent de saisie");
+  const [role, setRole] = useState<UserRole>("Utilisateur");
   const [status, setStatus] = useState<UserStatus>("Actif");
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function NewUserModal({ isOpen, onClose, onSave, editUser }: NewUserModal
     } else {
       setName("");
       setEmail("");
-      setRole("Agent de saisie");
+      setRole("Utilisateur");
       setStatus("Actif");
     }
     setPassword("");
@@ -123,8 +123,7 @@ export function NewUserModal({ isOpen, onClose, onSave, editUser }: NewUserModal
                 required
               >
                 <option value="Administrateur">Administrateur</option>
-                <option value="Comptable">Comptable</option>
-                <option value="Agent de saisie">Agent de saisie</option>
+                <option value="Utilisateur">Utilisateur</option>
               </select>
             </div>
 

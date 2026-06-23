@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const db = require('../db');
+const { validate, checkbookSchema } = require('../validation');
 
-// GET /api/checkbooks
 router.get('/', async (_req, res) => {
   try {
     const { rows } = await db.query(`
@@ -31,13 +31,9 @@ router.get('/', async (_req, res) => {
   }
 });
 
-// POST /api/checkbooks
-router.post('/', async (req, res) => {
+router.post('/', validate(checkbookSchema), async (req, res) => {
   try {
     const { bankAccountId, bankName, type, startNumber, endNumber } = req.body;
-    if (!bankAccountId || !bankName || !type || !startNumber || !endNumber) {
-      return res.status(400).json({ error: 'Champs requis manquants.' });
-    }
     const start = parseInt(startNumber);
     const end = parseInt(endNumber);
     const remaining = !isNaN(start) && !isNaN(end) ? end - start + 1 : 0;
@@ -60,7 +56,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// DELETE /api/checkbooks/:id
 router.delete('/:id', async (req, res) => {
   try {
     await db.query('DELETE FROM checkbooks WHERE id = $1', [req.params.id]);

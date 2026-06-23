@@ -1,15 +1,16 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Users,
   Printer,
   CalendarDays,
-  LogOut,
   LayoutDashboard,
   Briefcase,
   UserCog,
   FileEdit,
   FileUp,
-  BookOpen
+  BookOpen,
+  FileCheck,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
@@ -28,6 +29,8 @@ const NAV_GROUPS = [
     items: [
       { name: "Les Carnets", path: "/carnets", icon: FileEdit },
       { name: "Émis", path: "/emis", icon: FileUp, hasInfo: true },
+      { name: "Réglés", path: "/regles", icon: FileCheck },
+      { name: "Instances", path: "/instances", icon: Clock },
       { name: "Calendrier", path: "/calendrier", icon: CalendarDays },
       { name: "Les Clients", path: "/partenaires", icon: Users },
       { name: "Impression", path: "/impression", icon: Printer },
@@ -43,13 +46,7 @@ const NAV_GROUPS = [
 
 export function Sidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { currentUser, logout } = useApp();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const { currentUser } = useApp();
 
   return (
     <div className="w-[240px] bg-slate-900 h-screen flex flex-col text-slate-300">
@@ -66,6 +63,9 @@ export function Sidebar() {
             </div>
             <div className="space-y-1">
               {group.items.map((item) => {
+                if (item.path === "/roles" && currentUser?.role !== "Administrateur") {
+                  return null;
+                }
                 const isActive = location.pathname === item.path;
                 return (
                   <Link
@@ -102,13 +102,6 @@ export function Sidebar() {
           <div className="text-[10px] text-slate-500 truncate">{currentUser?.email}</div>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-[12px] w-full px-6 py-[10px] text-[13px] font-medium text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-all duration-200 border-none cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" />
-          Déconnexion
-        </button>
       </nav>
     </div>
   );

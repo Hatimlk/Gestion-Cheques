@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL DEFAULT 'Agent de saisie',
+  role VARCHAR(50) NOT NULL DEFAULT 'Utilisateur',
   status VARCHAR(20) NOT NULL DEFAULT 'Actif',
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -54,5 +54,20 @@ CREATE TABLE IF NOT EXISTS partners (
   contact VARCHAR(100),
   phone VARCHAR(50),
   balance NUMERIC(15,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS instances (
+  id SERIAL PRIMARY KEY,
+  date DATE NOT NULL,
+  facture VARCHAR(100) NOT NULL,
+  partner_id VARCHAR(50),
+  partner_name VARCHAR(200) NOT NULL,
+  amount NUMERIC(15,2) NOT NULL,
+  payment_delay VARCHAR(100) NOT NULL,
+  convention VARCHAR(100) NOT NULL,
+  mdp VARCHAR(50) NOT NULL,
+  payment_date DATE,
+  observation TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );

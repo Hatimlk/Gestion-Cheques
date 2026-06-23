@@ -62,7 +62,7 @@ export function PrintModal({ check, onClose }: PrintModalProps) {
                   <div className="flex flex-col gap-3 w-1/2">
                     <div className="flex items-end gap-2">
                       <span className="text-[13px] font-medium text-slate-700 whitespace-nowrap">À</span>
-                      <div className="border-b border-dotted border-slate-400 flex-1 pb-1 font-bold text-[13px] text-center">Casablanca</div>
+                      <div className="border-b border-dotted border-slate-400 flex-1 pb-1 font-bold text-[13px] text-center">Agadir</div>
                       <span className="text-[13px] font-medium text-slate-700 whitespace-nowrap">Le</span>
                       <div className="border-b border-dotted border-slate-400 flex-1 pb-1 font-bold text-[13px] text-center">{check.emissionDate.split('-').reverse().join('/')}</div>
                     </div>
@@ -87,7 +87,7 @@ export function PrintModal({ check, onClose }: PrintModalProps) {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-[12px] font-medium text-slate-600">Lieu de création:</span>
-                    <span className="font-bold text-[13px] border-b border-dotted border-slate-400 pb-0.5">Casablanca</span>
+                    <span className="font-bold text-[13px] border-b border-dotted border-slate-400 pb-0.5">Agadir</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[12px] font-medium text-slate-600">Date de création:</span>

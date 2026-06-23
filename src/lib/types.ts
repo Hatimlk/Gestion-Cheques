@@ -51,3 +51,17 @@ export type Checkbook = {
     cancelled: number;
   };
 };
+
+export type Instance = {
+  id: number;
+  date: string;
+  facture: string;
+  partnerId?: string | null;
+  partnerName: string;
+  amount: number;
+  paymentDelay: string;
+  convention: string;
+  mdp: string;
+  paymentDate?: string | null;
+  observation?: string | null;
+};

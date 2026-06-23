@@ -3,22 +3,18 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const requireAuth = require('../middleware/auth');
+const { validate, loginSchema } = require('../validation');
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email et mot de passe requis.' });
-    }
-
     const { rows } = await db.query(
       'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
       [email]
     );
     const user = rows[0];
     if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
-    if (user.status === 'Inactif') return res.status(403).json({ error: 'Ce compte est désactivé. Contactez l\'administrateur.' });
+    if (user.status === 'Inactif') return res.status(403).json({ error: 'Ce compte est désactivé.' });
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
@@ -39,7 +35,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// GET /api/auth/me
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const { rows } = await db.query(

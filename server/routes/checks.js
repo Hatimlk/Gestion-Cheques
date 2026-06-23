@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const db = require('../db');
+const { validate, checkSchema, checkUpdateSchema, statusSchema } = require('../validation');
 
-// GET /api/checks  — overdue status computed on read
 router.get('/', async (_req, res) => {
   try {
     const { rows } = await db.query(`
@@ -32,14 +32,9 @@ router.get('/', async (_req, res) => {
   }
 });
 
-// POST /api/checks
-router.post('/', async (req, res) => {
+router.post('/', validate(checkSchema), async (req, res) => {
   try {
     const { bankAccountId, checkbookId, type, number, partnerId, partnerName, emissionDate, dueDate, amount, note, facture } = req.body;
-    if (!bankAccountId || !type || !number || !partnerName || !emissionDate || !dueDate || amount == null) {
-      return res.status(400).json({ error: 'Champs requis manquants.' });
-    }
-
     const due = new Date(dueDate);
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const status = due < today ? 'En Retard' : 'En Circulation';
@@ -62,15 +57,15 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/checks/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(checkUpdateSchema), async (req, res) => {
   try {
     const { bankAccountId, type, number, partnerId, partnerName, emissionDate, dueDate, amount, status, note, facture } = req.body;
 
-    const { rows } = await db.query('SELECT status, due_date FROM checks WHERE id = $1', [req.params.id]);
+    const { rows } = await db.query('SELECT status, due_date, facture FROM checks WHERE id = $1', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Chèque introuvable.' });
 
-    const currentStatus = rows[0].status;
+    const oldCheck = rows[0];
+    const currentStatus = oldCheck.status;
     let newStatus = status ?? currentStatus;
     if (dueDate && (newStatus === 'En Circulation' || newStatus === 'En Retard')) {
       const due = new Date(dueDate);
@@ -95,6 +90,15 @@ router.put('/:id', async (req, res) => {
       [bankAccountId, type, number, partnerId || null, partnerName, emissionDate, dueDate, amount, newStatus, note || null, facture || null, req.params.id]
     );
 
+    const finalFacture = facture || oldCheck.facture;
+    if (finalFacture) {
+      if (newStatus === 'Payé') {
+        await db.query('UPDATE instances SET payment_date = $1 WHERE facture = $2 AND payment_date IS NULL', [dueDate || oldCheck.due_date, finalFacture]);
+      } else if (oldCheck.status === 'Payé' && newStatus !== 'Payé') {
+        await db.query('UPDATE instances SET payment_date = NULL WHERE facture = $1', [finalFacture]);
+      }
+    }
+
     res.json({ success: true, status: newStatus });
   } catch (err) {
     console.error(err);
@@ -102,12 +106,24 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/checks/:id/status
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', validate(statusSchema), async (req, res) => {
   try {
     const { status } = req.body;
-    if (!status) return res.status(400).json({ error: 'Status requis.' });
+
+    const { rows } = await db.query('SELECT status, due_date, facture FROM checks WHERE id = $1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Chèque introuvable.' });
+    const oldCheck = rows[0];
+
     await db.query('UPDATE checks SET status = $1 WHERE id = $2', [status, req.params.id]);
+
+    if (oldCheck.facture) {
+      if (status === 'Payé') {
+        await db.query('UPDATE instances SET payment_date = $1 WHERE facture = $2 AND payment_date IS NULL', [oldCheck.due_date, oldCheck.facture]);
+      } else if (oldCheck.status === 'Payé' && status !== 'Payé') {
+        await db.query('UPDATE instances SET payment_date = NULL WHERE facture = $1', [oldCheck.facture]);
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -115,10 +131,17 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-// DELETE /api/checks/:id
 router.delete('/:id', async (req, res) => {
   try {
+    const { rows } = await db.query('SELECT status, facture FROM checks WHERE id = $1', [req.params.id]);
+    const check = rows[0];
+
     await db.query('DELETE FROM checks WHERE id = $1', [req.params.id]);
+
+    if (check && check.status === 'Payé' && check.facture) {
+      await db.query('UPDATE instances SET payment_date = NULL WHERE facture = $1', [check.facture]);
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
