@@ -65,3 +65,14 @@ export type Instance = {
   paymentDate?: string | null;
   observation?: string | null;
 };
+
+export type Notification = {
+  id: string;
+  type: "due_soon" | "overdue";
+  checkId: string;
+  dueDate: string;
+  amount: number;
+  partnerName: string;
+  facture?: string;
+  source?: "check" | "instance";
+};

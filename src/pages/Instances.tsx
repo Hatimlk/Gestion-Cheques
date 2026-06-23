@@ -258,16 +258,50 @@ export function Instances() {
         const wb = XLSX.read(bstr, { type: "binary", cellDates: true });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const rawData = XLSX.utils.sheet_to_json<any>(ws, { defval: "" });
+        const rawDataArrays = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: "" });
 
-        if (rawData.length === 0) {
+        if (rawDataArrays.length === 0) {
           alert("Le fichier Excel est vide.");
           return;
         }
 
-        // Fuzzily map columns
-        const keys = Object.keys(rawData[0]);
-        
+        let headerRowIndex = -1;
+        let keys: string[] = [];
+
+        // Find the header row dynamically
+        for (let i = 0; i < rawDataArrays.length; i++) {
+          const row = rawDataArrays[i].map(cell => String(cell).toLowerCase().replace(/[^a-z0-9]/g, ""));
+          
+          const hasFacture = row.some(c => c.includes("facture") || c.includes("nfacture") || c.includes("numero"));
+          const hasFournisseur = row.some(c => c.includes("fournisseur") || c.includes("partenaire") || c.includes("client"));
+          const hasMontant = row.some(c => c.includes("montant") || c.includes("somme"));
+
+          if (hasFacture && hasFournisseur && hasMontant) {
+            headerRowIndex = i;
+            keys = rawDataArrays[i].map(cell => String(cell).trim());
+            break;
+          }
+        }
+
+        if (headerRowIndex === -1) {
+          alert("Erreur : L'en-tête du tableau est introuvable (les colonnes 'Facture', 'Fournisseur' et 'Montant' sont requises).");
+          return;
+        }
+
+        const rawData: any[] = [];
+        for (let i = headerRowIndex + 1; i < rawDataArrays.length; i++) {
+          const rowArray = rawDataArrays[i];
+          if (rowArray.every(cell => cell === "" || cell === null || cell === undefined)) continue;
+          
+          const rowObj: Record<string, any> = {};
+          for (let j = 0; j < keys.length; j++) {
+            if (keys[j]) {
+              rowObj[keys[j]] = rowArray[j];
+            }
+          }
+          rawData.push(rowObj);
+        }
+
         const getColumnKey = (possibleNames: string[]) => {
           return keys.find(k => 
             possibleNames.some(p => k.toLowerCase().replace(/[^a-z0-9]/g, "").includes(p.toLowerCase().replace(/[^a-z0-9]/g, "")))
@@ -564,6 +598,24 @@ export function Instances() {
                 const duration = getDuration(inst.date, inst.paymentDate);
                 const mois = getFrenchMonth(inst.date);
 
+                let isNearDeadline = false;
+                if (!inst.paymentDate) {
+                  const daysDelay = parseInt(inst.paymentDelay) || 0;
+                  const due = new Date(inst.date);
+                  due.setDate(due.getDate() + daysDelay);
+                  due.setHours(0, 0, 0, 0);
+                  
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  
+                  const diffTime = due.getTime() - today.getTime();
+                  const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  if (remainingDays <= 7) {
+                    isNearDeadline = true;
+                  }
+                }
+
                 return (
                   <tr key={inst.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-4 py-4 w-10">
@@ -609,7 +661,7 @@ export function Instances() {
                     <td className="px-3 py-4 w-[110px] font-medium text-slate-700">
                       {formatDateFr(inst.date)}
                     </td>
-                    <td className="px-3 py-4 w-[85px] text-right font-semibold text-slate-600">
+                    <td className={`px-3 py-4 w-[85px] text-right font-bold ${isNearDeadline ? 'text-red-600' : 'text-slate-600'}`}>
                       {duration},00
                     </td>
                     <td className="px-3 py-4 w-[95px] font-medium text-slate-500 uppercase">

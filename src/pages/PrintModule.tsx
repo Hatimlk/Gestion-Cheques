@@ -164,8 +164,27 @@ export function PrintModule() {
     return `#${parts.join(".")}#`;
   };
 
+  const wrapText = (text: string, maxChars: number) => {
+    if (!text) return ["Montant en lettres"];
+    const words = text.split(" ");
+    const lines = [];
+    let currentLine = "";
+    for (const word of words) {
+      if ((currentLine + word).length > maxChars) {
+        if (currentLine) lines.push(currentLine.trim());
+        currentLine = word + " ";
+      } else {
+        currentLine += word + " ";
+      }
+    }
+    if (currentLine) lines.push(currentLine.trim());
+    return lines;
+  };
+
+  const amountLettersLines = wrapText(amountLetters, isEffet ? 30 : 45);
+
   const elements = [
-    { id: 'amountLetters' as ElementId, text: amountLetters || "Montant en lettres", className: `font-bold uppercase text-[13px] leading-tight ${isEffet ? 'w-[220px] text-center' : 'w-[400px]'}` },
+    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase text-[13px] leading-none ${isEffet ? 'text-center' : ''}` },
     { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[17px] tracking-wider" },
     { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[14px]" },
     { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[14px]" },
@@ -337,10 +356,18 @@ export function PrintModule() {
               onDragEnd={(e, info) => handleDragEnd(el.id, info)}
               initial={{ x: positions[el.id].x, y: positions[el.id].y }}
               animate={{ x: positions[el.id].x, y: positions[el.id].y }}
-              className={`absolute cursor-move print:cursor-default text-slate-800 ${el.id === 'amountLetters' ? 'whitespace-normal' : 'whitespace-nowrap'} px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 print:border-none print:bg-transparent print:p-0 ${el.className}`}
+              className={`absolute cursor-move print:cursor-default text-slate-800 px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 print:border-none print:bg-transparent print:p-0 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >
-              {el.text}
+              {Array.isArray(el.text) ? (
+                <div className="flex flex-col gap-[17px]">
+                  {el.text.map((line, i) => (
+                    <div key={i} className="whitespace-nowrap">{line}</div>
+                  ))}
+                </div>
+              ) : (
+                el.text
+              )}
             </motion.div>
           ))}
         </div>
