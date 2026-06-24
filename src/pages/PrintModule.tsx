@@ -23,12 +23,12 @@ const DEFAULT_CHEQUE_POSITIONS: Record<ElementId, Position> = {
 };
 
 const DEFAULT_EFFET_POSITIONS: Record<ElementId, Position> = {
-  dueDate: { x: 630, y: 150 },
-  amountNumbers: { x: 600, y: 180 },
-  payee: { x: 510, y: 220 },
+  dueDate: { x: 630, y: 155 },
+  amountNumbers: { x: 600, y: 170 },
+  payee: { x: 480, y: 220 },
   place: { x: 400, y: 250 },
   date: { x: 500, y: 250 },
-  amountLetters: { x: 580, y: 250 },
+  amountLetters: { x: 580, y: 260 },
   cause: { x: 450, y: 280 },
 };
 
@@ -184,16 +184,16 @@ export function PrintModule() {
   const amountLettersLines = wrapText(amountLetters, isEffet ? 30 : 45);
 
   const elements = [
-    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase leading-tight ${isEffet ? 'text-center text-[15px]' : 'text-[15px]'}` },
-    { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[22px] tracking-wider" },
-    { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[18px]" },
-    { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[18px]" },
-    { id: 'date' as ElementId, text: date || "Date", className: "font-bold text-[18px]" },
+    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase leading-none ${isEffet ? 'text-center text-[12px]' : 'text-[13px]'}` },
+    { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[18px] tracking-wider" },
+    { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[15px]" },
+    { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[15px]" },
+    { id: 'date' as ElementId, text: date || "Date", className: "font-bold text-[15px]" },
   ];
 
   if (isEffet) {
-    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-bold text-[18px]" });
-    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-bold text-[18px]" });
+    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-bold text-[15px]" });
+    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-bold text-[15px]" });
   }
 
   const selectedBankObj = BANKS.find(b => bankType.toLowerCase().startsWith(b.name.toLowerCase()));
@@ -360,7 +360,7 @@ export function PrintModule() {
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >
               {Array.isArray(el.text) ? (
-                <div className={isEffet ? "flex flex-col gap-[6px]" : "flex flex-col gap-[17px]"}>
+                <div className={isEffet ? "flex flex-col gap-[2px]" : "flex flex-col gap-[17px]"}>
                   {el.text.map((line, i) => (
                     <div key={i} className="whitespace-nowrap">{line}</div>
                   ))}
