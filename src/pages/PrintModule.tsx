@@ -140,21 +140,33 @@ export function PrintModule() {
 
       const parsedAmount = parseFloat(amount.replace(/ /g, "").replace(/,/g, ".")) || 0;
 
+      const parseDate = (d: string) => {
+        if (!d) return new Date().toISOString().split("T")[0];
+        const parts = d.split("/");
+        if (parts.length === 3) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return d;
+      };
+
+      const finalDate = parseDate(date);
+      const finalDueDate = type === "Effet" ? parseDate(dueDate) : finalDate;
+
       addCheck({
         bankAccountId,
         type: type as "Chèque" | "Effet",
         number: `IMP-${Date.now().toString().slice(-4)}`,
         partnerId: `p_${Date.now()}`,
         partnerName: payee || "Inconnu",
-        emissionDate: date || new Date().toISOString().split("T")[0],
-        dueDate: type === "Effet" ? (dueDate || new Date().toISOString().split("T")[0]) : (date || new Date().toISOString().split("T")[0]),
+        emissionDate: finalDate,
+        dueDate: finalDueDate,
         amount: parsedAmount,
         note: "Reçu",
       });
 
       if (type === "Effet") {
         addInstance({
-          date: date || new Date().toISOString().split("T")[0],
+          date: finalDate,
           facture: cause || "Reçu d'impression",
           partnerId: `p_${Date.now()}`,
           partnerName: payee || "Inconnu",
