@@ -415,7 +415,7 @@ export function PrintModule() {
           }
           @page {
             margin: 0;
-            size: landscape;
+            size: 800px 350px;
           }
         }
       `}</style>
