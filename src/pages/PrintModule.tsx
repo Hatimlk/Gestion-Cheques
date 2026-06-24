@@ -184,7 +184,7 @@ export function PrintModule() {
   const amountLettersLines = wrapText(amountLetters, isEffet ? 30 : 45);
 
   const elements = [
-    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase text-[13px] leading-none ${isEffet ? 'text-center' : ''}` },
+    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase leading-none ${isEffet ? 'text-center text-[12px]' : 'text-[13px]'}` },
     { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[17px] tracking-wider" },
     { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[14px]" },
     { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[14px]" },
@@ -192,8 +192,8 @@ export function PrintModule() {
   ];
 
   if (isEffet) {
-    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-medium" });
-    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-medium text-[11px]" });
+    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-bold text-[14px]" });
+    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-bold text-[14px]" });
   }
 
   const selectedBankObj = BANKS.find(b => bankType.toLowerCase().startsWith(b.name.toLowerCase()));
@@ -360,7 +360,7 @@ export function PrintModule() {
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >
               {Array.isArray(el.text) ? (
-                <div className="flex flex-col gap-[17px]">
+                <div className={isEffet ? "flex flex-col gap-[6px]" : "flex flex-col gap-[17px]"}>
                   {el.text.map((line, i) => (
                     <div key={i} className="whitespace-nowrap">{line}</div>
                   ))}
