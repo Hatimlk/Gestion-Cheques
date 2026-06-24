@@ -67,7 +67,7 @@ async function loadAll() {
     api.get<Checkbook[]>('/checkbooks'),
     api.get<Check[]>('/checks'),
     api.get<PartnerListItem[]>('/partners'),
-    api.get<User[]>('/users'),
+    api.get<User[]>('/users').catch(() => []),
     api.get<Instance[]>('/instances'),
   ]);
 }

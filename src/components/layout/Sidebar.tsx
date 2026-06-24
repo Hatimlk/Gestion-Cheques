@@ -10,7 +10,8 @@ import {
   FileUp,
   BookOpen,
   FileCheck,
-  Clock
+  Clock,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
@@ -46,7 +47,7 @@ const NAV_GROUPS = [
 
 export function Sidebar() {
   const location = useLocation();
-  const { currentUser } = useApp();
+  const { currentUser, logout } = useApp();
 
   return (
     <div className="w-[240px] bg-slate-900 h-screen flex flex-col text-slate-300">
@@ -97,9 +98,18 @@ export function Sidebar() {
 
         <div className="border-t border-slate-700 mx-4 my-2" />
 
-        <div className="px-6 py-2 tour-user-profile">
-          <div className="text-[11px] text-slate-400 truncate">{currentUser?.name}</div>
-          <div className="text-[10px] text-slate-500 truncate">{currentUser?.email}</div>
+        <div className="px-6 py-2 tour-user-profile flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="text-[11px] text-slate-400 truncate">{currentUser?.name}</div>
+            <div className="text-[10px] text-slate-500 truncate">{currentUser?.email}</div>
+          </div>
+          <button 
+            onClick={logout}
+            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-[#1e293b] rounded-md transition-colors"
+            title="Se déconnecter"
+          >
+            <LogOut className="w-[15px] h-[15px]" strokeWidth={2.5} />
+          </button>
         </div>
 
       </nav>
