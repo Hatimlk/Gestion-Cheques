@@ -23,13 +23,13 @@ const DEFAULT_CHEQUE_POSITIONS: Record<ElementId, Position> = {
 };
 
 const DEFAULT_EFFET_POSITIONS: Record<ElementId, Position> = {
-  amountLetters: { x: 550, y: 200 },
-  amountNumbers: { x: 570, y: 150 },
+  amountLetters: { x: 530, y: 140 },
+  amountNumbers: { x: 570, y: 70 },
   payee: { x: 350, y: 70 },
   place: { x: 280, y: 110 },
   date: { x: 430, y: 110 },
-  dueDate: { x: 570, y: 110 },
-  cause: { x: 350, y: 150 },
+  dueDate: { x: 570, y: 30 },
+  cause: { x: 350, y: 140 },
 };
 
 const BANKS = [
@@ -184,16 +184,16 @@ export function PrintModule() {
   const amountLettersLines = wrapText(amountLetters, isEffet ? 30 : 45);
 
   const elements = [
-    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase leading-none ${isEffet ? 'text-center text-[12px]' : 'text-[13px]'}` },
-    { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[17px] tracking-wider" },
-    { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[14px]" },
-    { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[14px]" },
-    { id: 'date' as ElementId, text: date || "Date", className: "font-bold text-[14px]" },
+    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase leading-tight ${isEffet ? 'text-center text-[15px]' : 'text-[15px]'}` },
+    { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[22px] tracking-wider" },
+    { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[18px]" },
+    { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[18px]" },
+    { id: 'date' as ElementId, text: date || "Date", className: "font-bold text-[18px]" },
   ];
 
   if (isEffet) {
-    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-bold text-[14px]" });
-    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-bold text-[14px]" });
+    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-bold text-[18px]" });
+    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-bold text-[18px]" });
   }
 
   const selectedBankObj = BANKS.find(b => bankType.toLowerCase().startsWith(b.name.toLowerCase()));
