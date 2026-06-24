@@ -46,7 +46,7 @@ const BANKS = [
 
 export function PrintModule() {
   const location = useLocation();
-  const { addCheck, bankAccounts } = useApp();
+  const { addCheck, bankAccounts, addInstance } = useApp();
 
   const [bankType, setBankType] = useState("BANQUE POPULAIRE - Chèque");
   const [amount, setAmount] = useState("");
@@ -151,6 +151,21 @@ export function PrintModule() {
         amount: parsedAmount,
         note: "Reçu",
       });
+
+      if (type === "Effet") {
+        addInstance({
+          date: date || new Date().toISOString().split("T")[0],
+          facture: cause || "Reçu d'impression",
+          partnerId: `p_${Date.now()}`,
+          partnerName: payee || "Inconnu",
+          amount: parsedAmount,
+          paymentDelay: "-",
+          convention: "-",
+          mdp: "-",
+          paymentDate: null,
+          observation: "Généré automatiquement via l'impression"
+        });
+      }
       setIsFromExisting(true);
     }
   };
