@@ -187,8 +187,8 @@ export function PrintModule() {
     const num = parseFloat(amount.replace(/ /g, "").replace(/,/g, "."));
     if (isNaN(num)) return `#${amount}#`;
     const parts = num.toFixed(2).split(".");
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return `#${parts.join(".")}#`;
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `#${parts.join(",")}#`;
   };
 
   const wrapText = (text: string, maxChars: number) => {
@@ -211,16 +211,16 @@ export function PrintModule() {
   const amountLettersLines = wrapText(amountLetters, isEffet ? 30 : 45);
 
   const elements = [
-    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase leading-none ${isEffet ? 'text-center text-[12px]' : 'text-[13px]'}` },
-    { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[18px] tracking-wider" },
-    { id: 'payee' as ElementId, text: payee || "Nom du fournisseur/bénéficiaire", className: "font-bold uppercase text-[15px]" },
-    { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[15px]" },
-    { id: 'date' as ElementId, text: date || "Date", className: "font-bold text-[15px]" },
+    { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase ${isEffet ? 'text-center text-[10px]' : 'text-[11px]'}` },
+    { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[14px] tracking-wider" },
+    { id: 'payee' as ElementId, text: payee || "Nom du fournisseur/bénéficiaire", className: "font-bold uppercase text-[12px]" },
+    { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[12px]" },
+    { id: 'date' as ElementId, text: date || "Date", className: "font-bold text-[12px]" },
   ];
 
   if (isEffet) {
-    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-bold text-[15px]" });
-    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-bold text-[15px]" });
+    elements.push({ id: 'dueDate' as ElementId, text: dueDate || "Date d'échéance", className: "font-bold text-[12px]" });
+    elements.push({ id: 'cause' as ElementId, text: cause || "La cause", className: "font-bold text-[12px]" });
   }
 
   const selectedBankObj = BANKS.find(b => bankType.toLowerCase().startsWith(b.name.toLowerCase()));
@@ -387,7 +387,7 @@ export function PrintModule() {
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >
               {Array.isArray(el.text) ? (
-                <div className={isEffet ? "flex flex-col gap-[2px]" : "flex flex-col gap-[17px]"}>
+                <div style={{ lineHeight: isEffet ? '1.2' : '2' }} className={isEffet ? "text-center" : ""}>
                   {el.text.map((line, i) => (
                     <div key={i} className="whitespace-nowrap">{line}</div>
                   ))}
@@ -427,7 +427,6 @@ export function PrintModule() {
 
       <style>{`
         @page {
-          size: 800px 350px;
           margin: 0 !important;
         }
         @media print {
@@ -447,6 +446,7 @@ export function PrintModule() {
             top: 0;
             margin: 0;
             padding: 0;
+            font-family: Arial, Helvetica, sans-serif !important;
           }
         }
       `}</style>

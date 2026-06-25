@@ -10,15 +10,17 @@ export function amountToFrench(amount: number): string {
 
   if (dirhams > 0) {
     result += toCardinal(dirhams);
-    result += (dirhams > 1) ? " dirhams" : " dirham";
+    result += " DHs";
   } else {
-    result += "zéro dirham";
+    result += "zéro DHs";
   }
 
   if (centimes > 0) {
     result += " et ";
     result += toCardinal(centimes);
-    result += (centimes > 1) ? " centimes" : " centime";
+    result += " Cts";
+  } else {
+    result += " et zéro Cts";
   }
 
   // Capitalize first letter
