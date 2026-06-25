@@ -215,10 +215,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           cb.id === data.checkbookId ? { ...cb, remaining: Math.max(0, cb.remaining - 1) } : cb
         ));
       }
-      if (check.status === 'Payé' && check.facture) {
+      if (check.facture) {
         setInstances(insts => insts.map(inst => {
           if (inst.facture === check.facture) {
-            return { ...inst, paymentDate: check.dueDate };
+            const updates: Partial<Instance> = { mdp: check.type };
+            if (check.status === 'Payé') {
+              updates.paymentDate = check.dueDate;
+            }
+            api.put(`/instances/${inst.id}`, updates).catch(console.error);
+            return { ...inst, ...updates };
           }
           return inst;
         }));
@@ -238,10 +243,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (finalFacture) {
             setInstances(insts => insts.map(inst => {
               if (inst.facture === finalFacture) {
+                const updates: Partial<Instance> = {};
+                if (updated.type && updated.type !== c.type) {
+                  updates.mdp = updated.type;
+                }
                 if (updated.status === 'Payé') {
-                  return { ...inst, paymentDate: updated.dueDate };
+                  updates.paymentDate = updated.dueDate || c.dueDate;
                 } else if (c.status === 'Payé') {
-                  return { ...inst, paymentDate: null };
+                  updates.paymentDate = null;
+                }
+                if (Object.keys(updates).length > 0) {
+                  api.put(`/instances/${inst.id}`, updates).catch(console.error);
+                  return { ...inst, ...updates };
                 }
               }
               return inst;

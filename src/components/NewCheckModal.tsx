@@ -205,7 +205,7 @@ export function NewCheckModal({ isOpen, onClose, editCheck, prefillData }: NewCh
             <div className="grid grid-cols-2 gap-4 mt-8">
               <input 
                 type="text" 
-                placeholder="Bénéficiaire" 
+                placeholder="Fournisseur / Bénéficiaire" 
                 value={beneficiary} 
                 onChange={e => setBeneficiary(e.target.value)} 
                 className="w-full px-4 py-3 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 placeholder:text-slate-400" 

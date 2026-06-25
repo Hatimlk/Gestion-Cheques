@@ -131,7 +131,7 @@ export function Instances() {
 
   const handleExportCSV = (separator = ',') => {
     const items = getInstancesToExport();
-    const headers = ["DATE", "DUREE", "MOIS", "FACTURE", "FOURNISSEUR", "MONTANT", "DELAI DE PAIEMENT", "CONVENTION", "MDP", "DATE DE PAIEMENT", "OBSERVATION"];
+    const headers = ["DATE", "DUREE", "MOIS", "FACTURE", "FOURNISSEUR / BÉNÉFICIAIRE", "MONTANT", "DELAI DE PAIEMENT", "CONVENTION", "MDP", "DATE DE PAIEMENT", "OBSERVATION"];
     
     const rows = items.map(inst => {
       const dur = getDuration(inst.date, inst.paymentDate);
@@ -216,7 +216,7 @@ export function Instances() {
                 <th>DUREE</th>
                 <th>MOIS</th>
                 <th>FACTURE</th>
-                <th>FOURNISSEUR</th>
+                <th>FOURNISSEUR / BÉNÉFICIAIRE</th>
                 <th>MONTANT</th>
                 <th>DELAI DE PAIEMENT</th>
                 <th>CONVENTION</th>
@@ -528,7 +528,7 @@ export function Instances() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher Fournisseur, N° Facture.."
+                placeholder="Rechercher Fournisseur/Bénéficiaire, N° Facture.."
                 className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-[6px] text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent"
               />
             </div>
@@ -584,7 +584,7 @@ export function Instances() {
                 <th className="px-3 py-4 w-[85px] font-bold text-slate-600 text-[11px] tracking-wide text-right">DUREE</th>
                 <th className="px-3 py-4 w-[95px] font-bold text-slate-600 text-[11px] tracking-wide">MOIS</th>
                 <th className="px-3 py-4 w-[115px] font-bold text-slate-600 text-[11px] tracking-wide">FACTURE</th>
-                <th className="px-3 py-4 w-[200px] font-bold text-slate-600 text-[11px] tracking-wide">FOURNISSEUR</th>
+                <th className="px-3 py-4 w-[200px] font-bold text-slate-600 text-[11px] tracking-wide">FOURNISSEUR / BÉNÉFICIAIRE</th>
                 <th className="px-3 py-4 w-[125px] font-bold text-slate-600 text-[11px] tracking-wide text-right">MONTANT</th>
                 <th className="px-3 py-4 w-[150px] font-bold text-slate-600 text-[11px] tracking-wide">DELAI DE PAIEMENT</th>
                 <th className="px-3 py-4 w-[120px] font-bold text-slate-600 text-[11px] tracking-wide">CONVENTION</th>

@@ -156,7 +156,7 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
           </div>
 
           <div className="relative">
-            <label className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-800 font-bold z-10">Fournisseur</label>
+            <label className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-800 font-bold z-10">Fournisseur / Bénéficiaire</label>
             <button 
               type="button" 
               onClick={() => setSupplierType(supplierType === "select" ? "custom" : "select")}
@@ -172,12 +172,12 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
                   onChange={e => setPartnerId(e.target.value)} 
                   required={suppliers.length > 0}
                 >
-                  <option value="" disabled>Sélectionner un fournisseur</option>
+                  <option value="" disabled>Sélectionner un fournisseur/bénéficiaire</option>
                   {suppliers.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                   {suppliers.length === 0 && (
-                    <option value="" disabled>Aucun fournisseur enregistré</option>
+                    <option value="" disabled>Aucun fournisseur/bénéficiaire enregistré</option>
                   )}
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -186,7 +186,7 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
               <input 
                 type="text" 
                 className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[13px] outline-none focus:border-slate-800 focus:border-[1.5px]"
-                placeholder="Nom du Fournisseur"
+                placeholder="Nom du Fournisseur / Bénéficiaire"
                 value={customPartnerName}
                 onChange={e => setCustomPartnerName(e.target.value)}
                 required

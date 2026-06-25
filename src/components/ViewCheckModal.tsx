@@ -84,7 +84,7 @@ export function ViewCheckModal({ check, onClose }: ViewCheckModalProps) {
               {check.status}
             </span>
           </Row>
-          <Row label="Bénéficiaire">{check.partnerName}</Row>
+          <Row label="Fournisseur / Bénéficiaire">{check.partnerName}</Row>
           <Row label="Banque">
             <div className="flex items-center gap-1.5">
               {logoPath && <img src={logoPath} alt="" className="w-4 h-4 rounded-full object-cover" />}

@@ -167,7 +167,7 @@ export function AppTour() {
     {
       target: ".filters-bar",
       title: "Filtres Avancés",
-      content: "Utilisez ces filtres pour retrouver instantanément un document par date, montant, bénéficiaire ou statut (Payé, Rejeté...).",
+      content: "Utilisez ces filtres pour retrouver instantanément un document par date, montant, fournisseur/bénéficiaire ou statut (Payé, Rejeté...).",
       placement: "bottom",
       route: "/emis",
       icon: <span className="text-xl">🔍</span>
@@ -183,7 +183,7 @@ export function AppTour() {
     {
       target: "[data-tour='Les Clients']",
       title: "Gestion des Partenaires",
-      content: "Accédez à la liste complète de vos bénéficiaires (partenaires et clients) pour faciliter le suivi des transactions.",
+      content: "Accédez à la liste complète de vos fournisseurs/bénéficiaires (partenaires et clients) pour faciliter le suivi des transactions.",
       placement: "right",
       route: "/partenaires",
       icon: <span className="text-xl">👥</span>

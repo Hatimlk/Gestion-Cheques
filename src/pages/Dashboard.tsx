@@ -416,10 +416,10 @@ export function Dashboard() {
 
         {/* Column 2 */}
         <div className="space-y-6">
-          {/* Top bénéficiaires */}
+          {/* Top fournisseurs / bénéficiaires */}
           <div className="bg-white rounded-[16px] border border-slate-100 shadow-sm p-5 flex flex-col min-h-[400px]">
             <div className="flex items-center gap-2 font-bold text-[14px] text-slate-800 mb-4">
-              <Users className="w-4 h-4 text-slate-400" /> Top bénéficiaires
+              <Users className="w-4 h-4 text-slate-400" /> Top Fournisseurs/Bénéficiaires
             </div>
             <div className="flex flex-wrap items-center gap-2 mb-4 pb-1">
               <DropdownSelect 

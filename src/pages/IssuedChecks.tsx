@@ -161,7 +161,7 @@ export function IssuedChecks() {
 
   const handleExportCSV = (separator = ',') => {
     const checksToExport = getChecksToExport();
-    const headers = ["Compte Bancaire", "Type", "Numéro", "Bénéficiaire", "Date d'Émission", "Date d'Échéance", "Montant", "Facture", "Statut", "Note"];
+    const headers = ["Compte Bancaire", "Type", "Numéro", "Fournisseur / Bénéficiaire", "Date d'Émission", "Date d'Échéance", "Montant", "Facture", "Statut", "Note"];
     
     const rows = checksToExport.map(check => {
       const account = bankAccounts.find(a => a.id === check.bankAccountId);
@@ -239,7 +239,7 @@ export function IssuedChecks() {
               <tr>
                 <th>Compte Bancaire</th>
                 <th>Type / Numéro</th>
-                <th>Bénéficiaire</th>
+                <th>Fournisseur / Bénéficiaire</th>
                 <th>Date d'Émission</th>
                 <th>Date d'Échéance</th>
                 <th>Montant</th>
@@ -463,7 +463,7 @@ export function IssuedChecks() {
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Action</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Compte Bancaire</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Type/Numéro</th>
-                <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Bénéficiaire/Date d'Émission</th>
+                <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Fournisseur/Bénéficiaire / Date d'Émission</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Date d'Échéance</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Montant/Facture</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Statut/Note</th>

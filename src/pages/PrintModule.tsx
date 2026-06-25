@@ -213,7 +213,7 @@ export function PrintModule() {
   const elements = [
     { id: 'amountLetters' as ElementId, text: amountLettersLines, className: `font-bold uppercase leading-none ${isEffet ? 'text-center text-[12px]' : 'text-[13px]'}` },
     { id: 'amountNumbers' as ElementId, text: getFormattedAmount(), className: "font-bold text-[18px] tracking-wider" },
-    { id: 'payee' as ElementId, text: payee || "Nom du bénéficiaire", className: "font-bold uppercase text-[15px]" },
+    { id: 'payee' as ElementId, text: payee || "Nom du fournisseur/bénéficiaire", className: "font-bold uppercase text-[15px]" },
     { id: 'place' as ElementId, text: place || "Ville", className: "font-bold uppercase text-[15px]" },
     { id: 'date' as ElementId, text: date || "Date", className: "font-bold text-[15px]" },
   ];
@@ -283,7 +283,7 @@ export function PrintModule() {
             </label>
             <input
               type="text"
-              placeholder="Bénéficiaire"
+              placeholder="Fournisseur / Bénéficiaire"
               value={payee}
               onChange={(e) => setPayee(e.target.value)}
               className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-blue-50/50"
@@ -426,7 +426,15 @@ export function PrintModule() {
       </div>
 
       <style>{`
+        @page {
+          size: 800px 350px;
+          margin: 0 !important;
+        }
         @media print {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
           body * {
             visibility: hidden;
           }
@@ -439,10 +447,6 @@ export function PrintModule() {
             top: 0;
             margin: 0;
             padding: 0;
-          }
-          @page {
-            margin: 0;
-            size: 800px 350px;
           }
         }
       `}</style>
