@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { formatMAD, cn } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
 import { Instance } from "@/lib/types";
@@ -62,6 +63,7 @@ const formatDateFr = (dateStr: string) => {
 
 export function Instances() {
   const { instances, deleteInstance, addInstance } = useApp();
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editInstance, setEditInstance] = useState<Instance | null>(null);
   
@@ -656,6 +658,24 @@ export function Instances() {
                             />
                           </span>
                         )}
+                        <span title="Imprimer (Chèque/Effet)">
+                          <Printer
+                            onClick={() => {
+                              navigate("/print", {
+                                state: {
+                                  bankType: inst.mdp === "Effet" ? "BANQUE POPULAIRE - Effet" : "BANQUE POPULAIRE - Chèque",
+                                  amount: inst.amount.toString(),
+                                  payee: inst.partnerName,
+                                  date: formatDateFr(inst.date),
+                                  dueDate: formatDateFr(inst.date),
+                                  cause: inst.facture,
+                                  type: inst.mdp === "Effet" ? "Effet" : "Chèque"
+                                }
+                              });
+                            }}
+                            className="w-4 h-4 text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors"
+                          />
+                        </span>
                       </div>
                     </td>
                     <td className="px-3 py-4 w-[110px] font-medium text-slate-700">
