@@ -427,6 +427,7 @@ export function PrintModule() {
 
       <style>{`
         @page {
+          size: landscape;
           margin: 0 !important;
         }
         @media print {
