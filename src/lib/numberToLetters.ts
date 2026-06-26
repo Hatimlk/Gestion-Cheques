@@ -17,10 +17,10 @@ export function amountToFrench(amount: number): string {
 
   if (centimes > 0) {
     result += " et ";
-    result += toCardinal(centimes);
+    result += String(centimes).padStart(2, '0');
     result += " Cts";
   } else {
-    result += " et zéro Cts";
+    result += " et 00 Cts";
   }
 
   // Capitalize first letter

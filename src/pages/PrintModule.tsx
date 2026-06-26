@@ -79,7 +79,7 @@ export function PrintModule() {
   }, [location.state]);
 
   useEffect(() => {
-    const storageKey = isEffet ? "effetPositions" : "checkPositions";
+    const storageKey = `positions_${bankType.replace(/\s+/g, '_')}`;
     const defaultPos = isEffet ? DEFAULT_EFFET_POSITIONS : DEFAULT_CHEQUE_POSITIONS;
     const saved = localStorage.getItem(storageKey);
 
@@ -94,7 +94,7 @@ export function PrintModule() {
     } else {
       setPositions(defaultPos);
     }
-  }, [isEffet]);
+  }, [bankType, isEffet]);
 
   useEffect(() => {
     const num = parseFloat(amount.replace(/ /g, "").replace(/,/g, "."));
@@ -116,14 +116,14 @@ export function PrintModule() {
   };
 
   const savePositions = () => {
-    const storageKey = isEffet ? "effetPositions" : "checkPositions";
+    const storageKey = `positions_${bankType.replace(/\s+/g, '_')}`;
     localStorage.setItem(storageKey, JSON.stringify(positions));
-    alert("Positions enregistrées avec succès !");
+    alert(`Positions enregistrées avec succès pour ${bankType} !`);
   };
 
   const resetPositions = () => {
     const defaultPos = isEffet ? DEFAULT_EFFET_POSITIONS : DEFAULT_CHEQUE_POSITIONS;
-    const storageKey = isEffet ? "effetPositions" : "checkPositions";
+    const storageKey = `positions_${bankType.replace(/\s+/g, '_')}`;
     setPositions(defaultPos);
     localStorage.removeItem(storageKey);
   };
@@ -427,7 +427,7 @@ export function PrintModule() {
 
       <style>{`
         @page {
-          size: ${isEffet ? 'landscape' : 'portrait'};
+          size: landscape;
           margin: 0 !important;
         }
         @media print {
