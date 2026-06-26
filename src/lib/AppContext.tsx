@@ -111,6 +111,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
     initialize();
   }, []);
 
+  // Background sync for real-time updates between Admin and Users
+  useEffect(() => {
+    let syncTimeout: number;
+    let isSubscribed = true;
+
+    const syncData = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll();
+        if (!isSubscribed) return;
+        setBankAccounts(accounts);
+        setCheckbooks(books);
+        setChecks(chks);
+        setPartnerList(partners);
+        setUsers(allUsers);
+        setInstances(allInstances);
+      } catch (err) {
+        console.error("Sync failed:", err);
+      } finally {
+        if (isSubscribed) {
+          syncTimeout = window.setTimeout(syncData, 5000);
+        }
+      }
+    };
+
+    if (isAuthenticated) {
+      syncTimeout = window.setTimeout(syncData, 5000);
+    }
+
+    return () => {
+      isSubscribed = false;
+      if (syncTimeout) clearTimeout(syncTimeout);
+    };
+  }, [isAuthenticated]);
+
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
     try {
       const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
