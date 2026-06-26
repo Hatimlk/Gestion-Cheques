@@ -427,7 +427,7 @@ export function PrintModule() {
 
       <style>{`
         @page {
-          size: landscape;
+          size: ${isEffet ? 'landscape' : 'portrait'};
           margin: 0 !important;
         }
         @media print {
