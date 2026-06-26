@@ -157,6 +157,22 @@ export function AppTour() {
       icon: <span className="text-xl">➕</span>
     },
     {
+      target: "[data-tour='Rôles']",
+      title: "Gestion des Rôles",
+      content: "Gérez les accès de votre équipe. En tant qu'administrateur, vous pouvez ajouter des utilisateurs et définir leurs permissions.",
+      placement: "right",
+      route: "/roles",
+      icon: <span className="text-xl">🔐</span>
+    },
+    {
+      target: "[data-tour='Les Carnets']",
+      title: "Les Carnets",
+      content: "Gérez vos carnets de chèques et d'effets. Suivez les numéros de chèques disponibles et les souches consommées.",
+      placement: "right",
+      route: "/carnets",
+      icon: <span className="text-xl">📓</span>
+    },
+    {
       target: "[data-tour='Émis']",
       title: "Émissions",
       content: "Le cœur de l'application : retrouvez la liste complète des chèques et effets émis, et suivez leur statut en temps réel.",
@@ -171,6 +187,22 @@ export function AppTour() {
       placement: "bottom",
       route: "/emis",
       icon: <span className="text-xl">🔍</span>
+    },
+    {
+      target: "[data-tour='Réglés']",
+      title: "Documents Réglés",
+      content: "Consultez l'historique de tous vos chèques et effets qui ont été payés et réglés définitivement.",
+      placement: "right",
+      route: "/regles",
+      icon: <span className="text-xl">✅</span>
+    },
+    {
+      target: "[data-tour='Instances']",
+      title: "Instances",
+      content: "Suivez vos factures et paiements en attente. Une vue claire pour ne rater aucune échéance et imprimer directement vos chèques/effets.",
+      placement: "right",
+      route: "/instances",
+      icon: <span className="text-xl">⏳</span>
     },
     {
       target: "[data-tour='Calendrier']",
