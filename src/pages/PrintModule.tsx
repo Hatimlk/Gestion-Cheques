@@ -360,20 +360,18 @@ export function PrintModule() {
 
       <div className="flex flex-col items-center gap-6 overflow-x-auto pb-8 print:p-0 print:m-0 print:overflow-visible">
 
+        {/* Screen Version (Framer Motion) */}
         <div
-          id="printable-check"
-          className="relative bg-[#FDFBF2] border border-slate-300 shadow-md print:shadow-none print:border-none rounded-[4px] overflow-hidden select-none print:absolute print:left-0 print:top-0 print:m-0 print:bg-transparent"
+          className="relative bg-[#FDFBF2] border border-slate-300 shadow-md rounded-[4px] overflow-hidden select-none print:hidden"
           style={{ width: '800px', height: '350px' }}
         >
           {bgImage && (
             <img
               src={bgImage}
               alt="Background"
-              className="absolute inset-0 w-full h-full object-fill pointer-events-none print:hidden opacity-90"
+              className="absolute inset-0 w-full h-full object-fill pointer-events-none opacity-90"
             />
           )}
-
-
 
           {elements.map((el) => (
             <motion.div
@@ -383,7 +381,7 @@ export function PrintModule() {
               onDragEnd={(e, info) => handleDragEnd(el.id, info)}
               initial={{ x: positions[el.id].x, y: positions[el.id].y }}
               animate={{ x: positions[el.id].x, y: positions[el.id].y }}
-              className={`absolute cursor-move print:cursor-default text-slate-800 px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 print:border-none print:bg-transparent print:p-0 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
+              className={`absolute cursor-move text-slate-800 px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >
               {Array.isArray(el.text) ? (
@@ -396,6 +394,31 @@ export function PrintModule() {
                 el.text
               )}
             </motion.div>
+          ))}
+        </div>
+
+        {/* Print Version (Pure CSS) */}
+        <div
+          id="printable-check"
+          className="hidden print:block absolute left-0 top-0 m-0 p-0 bg-transparent border-none shadow-none select-none"
+          style={{ width: '800px', height: '350px' }}
+        >
+          {elements.map((el) => (
+            <div
+              key={el.id}
+              className={`absolute text-black px-2 py-1 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
+              style={{ left: positions[el.id].x, top: positions[el.id].y }}
+            >
+              {Array.isArray(el.text) ? (
+                <div style={{ lineHeight: isEffet ? '1.2' : '2' }} className={isEffet ? "text-center" : ""}>
+                  {el.text.map((line, i) => (
+                    <div key={i} className="whitespace-nowrap">{line}</div>
+                  ))}
+                </div>
+              ) : (
+                el.text
+              )}
+            </div>
           ))}
         </div>
 
