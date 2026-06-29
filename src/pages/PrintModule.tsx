@@ -400,7 +400,7 @@ export function PrintModule() {
         {/* Print Version (Pure CSS) */}
         <div
           id="printable-check"
-          className="hidden print:block absolute left-0 top-0 m-0 p-0 bg-transparent border-none shadow-none select-none"
+          className="hidden print:block absolute right-0 top-0 m-0 p-0 bg-transparent border-none shadow-none select-none"
           style={{ width: '800px', height: '350px' }}
         >
           {elements.map((el) => (
@@ -466,7 +466,8 @@ export function PrintModule() {
           }
           #printable-check {
             position: absolute;
-            left: 0;
+            right: 0;
+            left: auto;
             top: 0;
             margin: 0;
             padding: 0;
