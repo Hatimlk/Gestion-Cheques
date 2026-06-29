@@ -201,9 +201,12 @@ export function Instances() {
         <head>
           <title>Factures en Instance de Paiement</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-            th { border: 1px solid #ddd; padding: 8px; background-color: #f1f5f9; text-align: left; font-weight: bold; }
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: Arial, sans-serif; padding: 20px; color: #333; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            th { border: 1px solid #ddd; padding: 8px; background-color: #f1f5f9 !important; text-align: left; font-weight: bold; }
+            td { border: 1px solid #ddd; padding: 6px; }
             h1 { font-size: 16px; margin-bottom: 5px; color: #0f172a; }
             p { font-size: 11px; margin: 2px 0; color: #64748b; }
           </style>

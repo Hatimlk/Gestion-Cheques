@@ -187,9 +187,12 @@ export function RegleChecks() {
         <head>
           <title>Export Chèques Réglés</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-            th { border: 1px solid #ddd; padding: 8px; background-color: #f8f9fa; text-align: left; }
+            @page { size: landscape; margin: 10mm; }
+            body { font-family: Arial, sans-serif; padding: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            th { border: 1px solid #ddd; padding: 8px; background-color: #f8f9fa !important; text-align: left; }
+            td { border: 1px solid #ddd; padding: 8px; }
             h1 { font-size: 18px; color: #333; }
           </style>
         </head>
