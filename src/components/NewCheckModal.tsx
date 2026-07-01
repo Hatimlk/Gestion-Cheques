@@ -96,8 +96,16 @@ export function NewCheckModal({ isOpen, onClose, editCheck, prefillData }: NewCh
     if (isNaN(num)) return;
     if (!bankAccounts.find(a => a.id === bankAccountId)) return;
 
-    const emDate = emissionDate ? emissionDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
-    const dDate = dueDate ? dueDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+    const getLocalDateString = (d: Date | null) => {
+      if (!d) return new Date().toISOString().split("T")[0]; // default fallback
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const emDate = getLocalDateString(emissionDate);
+    const dDate = getLocalDateString(dueDate);
 
     if (isEditing) {
       updateCheck(editCheck.id, {

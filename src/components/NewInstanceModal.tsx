@@ -97,8 +97,16 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
       return;
     }
 
-    const dateStr = date.toISOString().split("T")[0];
-    const payDateStr = paymentDate ? paymentDate.toISOString().split("T")[0] : null;
+    const getLocalDateString = (d: Date | null) => {
+      if (!d) return null;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const dateStr = getLocalDateString(date) as string;
+    const payDateStr = getLocalDateString(paymentDate);
 
     const instanceData = {
       date: dateStr,
