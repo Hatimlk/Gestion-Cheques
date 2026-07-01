@@ -73,6 +73,7 @@ export function Instances() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<number[]>([]);
+  const [sortBy, setSortBy] = useState<"date" | "alphabetical">("date");
 
   // Add states for NewCheckModal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -100,7 +101,12 @@ export function Instances() {
     }
 
     return matchesSearch;
-  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }).sort((a, b) => {
+    if (sortBy === "alphabetical") {
+      return a.partnerName.localeCompare(b.partnerName);
+    }
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
   // Statistics
   const pendingInvoices = instances.filter(i => !i.paymentDate);
@@ -523,6 +529,19 @@ export function Instances() {
                 <option value="all">Tous</option>
                 <option value="pending">En Instance</option>
                 <option value="paid">Payée</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            <div className="relative flex-1 max-w-[200px]">
+              <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-slate-400 font-medium">Trier par</span>
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-[6px] text-[12px] font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent"
+              >
+                <option value="date">Date de facture</option>
+                <option value="alphabetical">Ordre alphabétique (A-Z)</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>

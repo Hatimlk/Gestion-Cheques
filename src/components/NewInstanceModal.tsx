@@ -55,7 +55,7 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
       setAmount("");
       setPaymentDelay("120 jrs");
       setConvention("120 jrs");
-      setMdp("Chèque");
+      setMdp("");
       setPaymentDate(null);
       setObservation("");
     }
@@ -212,8 +212,8 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
                 className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-700 bg-white appearance-none outline-none focus:border-slate-800 focus:border-[1.5px]"
                 value={mdp} 
                 onChange={e => setMdp(e.target.value)} 
-                required
               >
+                <option value=""></option>
                 <option value="Chèque">Chèque</option>
                 <option value="Effet">Effet</option>
                 <option value="Virement">Virement</option>
