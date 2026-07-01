@@ -5,10 +5,11 @@ import { Check } from "@/lib/types";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Printer, Eye, Pencil, Check as CheckIcon, X,
-  FileText, RefreshCw, ChevronDown, Share, FileCheck, FileX
+  FileText, RefreshCw, ChevronDown, Share, FileCheck, FileX, Upload
 } from "lucide-react";
 import { ViewCheckModal } from "@/components/ViewCheckModal";
 import { DatePicker } from "@/components/DatePicker";
+import * as XLSX from "xlsx";
 
 const PdfIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -44,7 +45,7 @@ const maskRib = (rib: string) => {
 };
 
 export function RegleChecks() {
-  const { checks, bankAccounts, updateCheckStatus } = useApp();
+  const { checks, bankAccounts, updateCheckStatus, addCheck } = useApp();
   const navigate = useNavigate();
   const [checkToView, setCheckToView] = useState<Check | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -233,6 +234,153 @@ export function RegleChecks() {
     setIsExportMenuOpen(false);
   };
 
+  const handleImportExcelFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        
+        const rawDataArrays: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        
+        let headerRowIndex = -1;
+        let keys: string[] = [];
+        for (let i = 0; i < Math.min(20, rawDataArrays.length); i++) {
+          const row = rawDataArrays[i];
+          if (row && row.length > 2) {
+            const rowStr = row.join("").toLowerCase();
+            if (rowStr.includes("montant") || rowStr.includes("fournisseur") || rowStr.includes("num")) {
+              headerRowIndex = i;
+              keys = row.map(cell => String(cell || "").trim());
+              break;
+            }
+          }
+        }
+
+        if (headerRowIndex === -1) {
+          alert("Erreur: Impossible de trouver la ligne d'en-tête. Assurez-vous d'avoir les colonnes comme 'Montant', 'Fournisseur' ou 'Numéro'.");
+          return;
+        }
+
+        const rawData: any[] = [];
+        for (let i = headerRowIndex + 1; i < rawDataArrays.length; i++) {
+          const rowArray = rawDataArrays[i];
+          if (rowArray.every(cell => cell === "" || cell === null || cell === undefined)) continue;
+          
+          const rowObj: Record<string, any> = {};
+          for (let j = 0; j < keys.length; j++) {
+            if (keys[j]) {
+              rowObj[keys[j]] = rowArray[j];
+            }
+          }
+          rawData.push(rowObj);
+        }
+
+        const getColumnKey = (possibleNames: string[]) => {
+          return keys.find(k => 
+            possibleNames.some(p => k.toLowerCase().replace(/[^a-z0-9]/g, "").includes(p.toLowerCase().replace(/[^a-z0-9]/g, "")))
+          ) || "";
+        };
+
+        const dateCol = getColumnKey(["date", "emission"]);
+        const dueDateCol = getColumnKey(["echeance", "due"]);
+        const partnerCol = getColumnKey(["fournisseur", "partenaire", "client", "nom", "beneficiaire"]);
+        const amountCol = getColumnKey(["montant", "somme", "valeur", "amount"]);
+        const typeCol = getColumnKey(["type", "mode"]);
+        const numberCol = getColumnKey(["numero", "num"]);
+        const factureCol = getColumnKey(["facture", "fac"]);
+
+        if (!partnerCol || !amountCol || !numberCol) {
+          alert("Erreur de format : Les colonnes 'Numéro', 'Fournisseur' et 'Montant' sont requises.");
+          return;
+        }
+
+        let importedCount = 0;
+        
+        for (const row of rawData) {
+          let emissionDateVal = new Date().toISOString().split("T")[0];
+          const rawDate = row[dateCol];
+          if (rawDate) {
+            if (rawDate instanceof Date) {
+              emissionDateVal = rawDate.toISOString().split("T")[0];
+            } else {
+              const strDate = String(rawDate).trim();
+              const parts = strDate.split("/");
+              if (parts.length === 3) {
+                emissionDateVal = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+              } else {
+                emissionDateVal = strDate.includes("-") ? strDate : emissionDateVal;
+              }
+            }
+          }
+
+          let dueDateVal = emissionDateVal;
+          const rawDueDate = row[dueDateCol];
+          if (rawDueDate) {
+            if (rawDueDate instanceof Date) {
+              dueDateVal = rawDueDate.toISOString().split("T")[0];
+            } else {
+              const strDate = String(rawDueDate).trim();
+              const parts = strDate.split("/");
+              if (parts.length === 3) {
+                dueDateVal = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+              } else {
+                dueDateVal = strDate.includes("-") ? strDate : dueDateVal;
+              }
+            }
+          }
+
+          let amountVal = parseFloat(String(row[amountCol]).replace(/[^0-9.-]/g, ""));
+          if (isNaN(amountVal)) continue;
+
+          const partnerVal = String(row[partnerCol] || "").trim();
+          const numberVal = String(row[numberCol] || "").trim();
+          if (!partnerVal || !numberVal) continue;
+
+          const typeVal = String(row[typeCol] || "Chèque").trim();
+          const isEffet = typeVal.toLowerCase().includes("effet");
+          const typeFormatted = isEffet ? "Effet" : "Chèque";
+          
+          const factureVal = String(row[factureCol] || "").trim();
+          
+          // Fallback bank ID since we don't have it in standard template
+          const fallbackBankId = bankAccounts[0]?.id || "b1";
+
+          const newCheck = await addCheck({
+            bankAccountId: fallbackBankId,
+            type: typeFormatted,
+            number: numberVal,
+            partnerId: `p_${Date.now()}_${importedCount}`,
+            partnerName: partnerVal,
+            emissionDate: emissionDateVal,
+            dueDate: dueDateVal,
+            amount: amountVal,
+            facture: factureVal || undefined,
+            note: "Importé via Excel",
+          });
+          
+          if (newCheck && newCheck.id) {
+            await updateCheckStatus(newCheck.id, "Payé");
+          }
+
+          importedCount++;
+        }
+
+        alert(`${importedCount} chèques/effets réglés importés avec succès.`);
+        e.target.value = "";
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de la lecture du fichier Excel.");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -243,6 +391,18 @@ export function RegleChecks() {
             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
             <span>Chèques/Effets Réglés</span>
           </div>
+        </div>
+        <div className="flex items-center gap-2 self-start">
+          <label htmlFor="excel-import-regle" className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-[8px] text-[12px] font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+            <Upload className="w-4 h-4" /> Importer Excel
+          </label>
+          <input 
+            type="file" 
+            id="excel-import-regle" 
+            accept=".xlsx, .xls, .csv" 
+            onChange={handleImportExcelFile} 
+            className="hidden" 
+          />
         </div>
       </div>
 

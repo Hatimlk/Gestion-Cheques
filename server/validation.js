@@ -90,7 +90,7 @@ const instanceSchema = z.object({
   amount: z.number(),
   paymentDelay: z.string().min(1).max(100),
   convention: z.string().min(1).max(100),
-  mdp: z.string().min(1).max(50),
+  mdp: z.string().max(50).optional().nullable(),
   paymentDate: z.string().optional().nullable(),
   observation: z.string().max(2000).optional().nullable(),
 });

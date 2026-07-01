@@ -43,7 +43,7 @@ interface AppContextType {
   updateBankAccount: (id: string, data: { bankName: string; rib: string }) => Promise<void>;
   addCheckbook: (data: { bankAccountId: string; bankName: string; type: CheckType; startNumber: string; endNumber: string }) => Promise<void>;
   deleteCheckbook: (id: string) => Promise<void>;
-  addCheck: (data: { bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number; facture?: string; note?: string }) => Promise<void>;
+  addCheck: (data: { bankAccountId: string; checkbookId?: string; type: CheckType; number: string; partnerId: string; partnerName: string; emissionDate: string; dueDate: string; amount: number; facture?: string; note?: string }) => Promise<Check>;
   updateCheck: (id: string, data: Partial<Omit<Check, 'id' | 'checkbookId'>>) => Promise<void>;
   updateCheckStatus: (id: string, status: CheckStatus) => Promise<void>;
   deleteCheck: (id: string) => Promise<void>;
@@ -263,8 +263,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return inst;
         }));
       }
+      return check;
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout du chèque.');
+      throw err;
     }
   }, []);
 
