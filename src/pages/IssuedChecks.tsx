@@ -119,17 +119,17 @@ export function IssuedChecks() {
   const handlePrint = (check: Check) => {
     const account = bankAccounts.find(a => a.id === check.bankAccountId);
     const bankName = account?.bankName || "";
-    navigate("/impression", {
-      state: {
-        bankType: bankName ? `${bankName} - ${check.type}` : undefined,
-        amount: String(check.amount),
-        payee: check.partnerName,
-        date: check.emissionDate,
-        dueDate: check.dueDate,
-        checkNumber: check.number,
-        type: check.type,
-      }
-    });
+    const printState = {
+      bankType: bankName ? `${bankName} - ${check.type}` : undefined,
+      amount: String(check.amount),
+      payee: check.partnerName,
+      date: check.emissionDate,
+      dueDate: check.dueDate,
+      checkNumber: check.number,
+      type: check.type,
+    };
+    localStorage.setItem("printData", JSON.stringify(printState));
+    window.open("/impression", "_blank");
   };
 
   const handleDeposer = (check: Check) => {

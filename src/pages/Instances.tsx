@@ -661,11 +661,11 @@ export function Instances() {
                             />
                           </span>
                         )}
-                        <span title="Imprimer (Chèque/Effet)">
-                          <Printer
-                            onClick={() => {
-                              navigate("/print", {
-                                state: {
+                        {inst.mdp !== "Virement" && (
+                          <span title="Imprimer (Chèque/Effet)">
+                            <Printer
+                              onClick={() => {
+                                const printState = {
                                   bankType: inst.mdp === "Effet" ? "BANQUE POPULAIRE - Effet" : "BANQUE POPULAIRE - Chèque",
                                   amount: inst.amount.toString(),
                                   payee: inst.partnerName,
@@ -673,12 +673,14 @@ export function Instances() {
                                   dueDate: formatDateFr(inst.date),
                                   cause: inst.facture,
                                   type: inst.mdp === "Effet" ? "Effet" : "Chèque"
-                                }
-                              });
-                            }}
-                            className="w-4 h-4 text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors"
-                          />
-                        </span>
+                                };
+                                localStorage.setItem("printData", JSON.stringify(printState));
+                                window.open("/impression", "_blank");
+                              }}
+                              className="w-4 h-4 text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors"
+                            />
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-3 py-4 w-[110px] font-medium text-slate-700">

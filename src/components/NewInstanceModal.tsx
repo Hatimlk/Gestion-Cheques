@@ -216,7 +216,8 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
               >
                 <option value="Chèque">Chèque</option>
                 <option value="Effet">Effet</option>
-                {mdp && mdp !== "Chèque" && mdp !== "Effet" && (
+                <option value="Virement">Virement</option>
+                {mdp && mdp !== "Chèque" && mdp !== "Effet" && mdp !== "Virement" && (
                   <option value={mdp}>{mdp}</option>
                 )}
               </select>

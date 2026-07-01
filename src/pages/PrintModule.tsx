@@ -64,7 +64,18 @@ export function PrintModule() {
   const [isFromExisting, setIsFromExisting] = useState(false);
 
   useEffect(() => {
-    const state = location.state as Record<string, string> | null;
+    let state = location.state as Record<string, string> | null;
+    if (!state) {
+      const stored = localStorage.getItem("printData");
+      if (stored) {
+        try {
+          state = JSON.parse(stored);
+          // Optional: clear it so it doesn't get reused unintentionally
+          // localStorage.removeItem("printData");
+        } catch (e) {}
+      }
+    }
+
     if (state) {
       if (state.checkNumber) setIsFromExisting(true);
       if (state.bankType) setBankType(state.bankType);
