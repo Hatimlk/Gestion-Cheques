@@ -341,7 +341,7 @@ export function Instances() {
         const amountCol = getColumnKey(["montant", "somme", "valeur", "amount"]);
         const delayCol = getColumnKey(["delai", "paymentdelay", "delaipaiement", "echeance"]);
         const conventionCol = getColumnKey(["convention", "accord"]);
-        const mdpCol = getColumnKey(["mdp", "modedechemin", "paiement", "modepaiement", "reglement"]);
+        const mdpCol = getColumnKey(["mdp", "modedepaiement", "modepaiement", "mode de paiement"]);
         const paymentDateCol = getColumnKey(["datepaiement", "paymentdate", "paye", "reglementdate"]);
         const obsCol = getColumnKey(["observation", "obs", "note", "commentaire"]);
 

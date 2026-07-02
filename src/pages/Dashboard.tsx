@@ -125,7 +125,7 @@ function DropdownSelect({ options, value, onChange, prefix = "", buttonClassName
 }
 
 export function Dashboard() {
-  const { checks, checkbooks, partnerList, bankAccounts } = useApp();
+  const { checks, checkbooks, partnerList, bankAccounts, instances } = useApp();
   const navigate = useNavigate();
 
   // Dashboard controls state
@@ -138,31 +138,42 @@ export function Dashboard() {
   const [checkToEdit, setCheckToEdit] = useState<Check | null>(null);
 
   // Year selector — build list from data
-  const availableYears = Array.from(new Set<number>(checks.map(c => parseInt(c.dueDate.substring(0, 4), 10)))).filter(y => !isNaN(y)).sort((a, b) => b - a);
+  const availableYears = Array.from(new Set<number>([
+    ...checks.map(c => parseInt(c.dueDate.substring(0, 4), 10)),
+    ...instances.map(i => parseInt(i.date.substring(0, 4), 10))
+  ])).filter(y => !isNaN(y)).sort((a, b) => b - a);
   const currentYear = new Date().getFullYear();
   const defaultYear = availableYears.includes(currentYear) ? currentYear : (availableYears[0] ?? currentYear);
   const [selectedYear, setSelectedYear] = useState(defaultYear);
 
-  // Status totals
-  const statusCounts = { "En Circulation": 0, "En Retard": 0, "Payé": 0, "Annulé": 0 };
+  // Status totals including instances
+  const enInstanceCount = instances.length;
+  const enInstanceAmount = instances.reduce((s, i) => s + i.amount, 0);
+
   let enCirculationAmount = 0, enRetardAmount = 0, payeAmount = 0, annuleAmount = 0;
+  let enCirculationCount = 0, enRetardCount = 0, payeCount = 0, annuleCount = 0;
+
   checks.forEach(c => {
-    if (c.status === "En Circulation") { statusCounts["En Circulation"]++; enCirculationAmount += c.amount; }
-    if (c.status === "En Retard") { statusCounts["En Retard"]++; enRetardAmount += c.amount; }
-    if (c.status === "Payé") { statusCounts["Payé"]++; payeAmount += c.amount; }
-    if (c.status === "Annulé") { statusCounts["Annulé"]++; annuleAmount += c.amount; }
+    if (["En Circulation", "Déposé"].includes(c.status)) { enCirculationCount++; enCirculationAmount += c.amount; }
+    if (["En Retard", "Impayé"].includes(c.status)) { enRetardCount++; enRetardAmount += c.amount; }
+    if (c.status === "Payé") { payeCount++; payeAmount += c.amount; }
+    if (c.status === "Annulé") { annuleCount++; annuleAmount += c.amount; }
   });
-  const totalAmount = enCirculationAmount + enRetardAmount + payeAmount + annuleAmount;
-  const totalCount = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+
+  const totalAmount = enInstanceAmount + enCirculationAmount + enRetardAmount + payeAmount;
+  const totalCount = enInstanceCount + enCirculationCount + enRetardCount + payeCount;
 
   const emittedChecks = checks;
   const totalEmittedAmount = emittedChecks.reduce((s, c) => s + c.amount, 0);
 
-  // Partner helpers (defined before topPartners so they can be used in sort)
-  const getPartnerPaid = (id: string | number) =>
-    emittedChecks.filter(c => c.partnerId === String(id) && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
-  const getPartnerUnpaid = (id: string | number) =>
-    emittedChecks.filter(c => c.partnerId === String(id) && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
+  // Partner helpers
+  const getPartnerPaid = (name: string) =>
+    emittedChecks.filter(c => c.partnerName === name && c.status === "Payé").reduce((s, c) => s + c.amount, 0);
+  const getPartnerUnpaid = (name: string) => {
+    const checksUnpaid = emittedChecks.filter(c => c.partnerName === name && c.status !== "Payé" && c.status !== "Annulé").reduce((s, c) => s + c.amount, 0);
+    const instancesUnpaid = instances.filter(i => i.partnerName === name).reduce((s, i) => s + i.amount, 0);
+    return checksUnpaid + instancesUnpaid;
+  };
 
   // Top 10 checks with sort
   const top10Checks = [...emittedChecks]
@@ -188,13 +199,13 @@ export function Dashboard() {
   // Top partners with sort
   const topPartners = [...partnerList]
     .sort((a, b) => {
-      if (partnersSort === "Top client à payer") return getPartnerUnpaid(b.id) - getPartnerUnpaid(a.id);
-      if (partnersSort === "Moins client à payer") return getPartnerUnpaid(a.id) - getPartnerUnpaid(b.id);
-      if (partnersSort === "Montant total le plus élevé") return (getPartnerPaid(b.id) + getPartnerUnpaid(b.id)) - (getPartnerPaid(a.id) + getPartnerUnpaid(a.id));
-      if (partnersSort === "Montant payé le plus élevé") return getPartnerPaid(b.id) - getPartnerPaid(a.id);
+      if (partnersSort === "Top client à payer") return getPartnerUnpaid(b.name) - getPartnerUnpaid(a.name);
+      if (partnersSort === "Moins client à payer") return getPartnerUnpaid(a.name) - getPartnerUnpaid(b.name);
+      if (partnersSort === "Montant total le plus élevé") return (getPartnerPaid(b.name) + getPartnerUnpaid(b.name)) - (getPartnerPaid(a.name) + getPartnerUnpaid(a.name));
+      if (partnersSort === "Montant payé le plus élevé") return getPartnerPaid(b.name) - getPartnerPaid(a.name);
       if (partnersSort === "Nom (A-Z)") return a.name.localeCompare(b.name);
       if (partnersSort === "Nom (Z-A)") return b.name.localeCompare(a.name);
-      return getPartnerUnpaid(b.id) - getPartnerUnpaid(a.id);
+      return getPartnerUnpaid(b.name) - getPartnerUnpaid(a.name);
     })
     .slice(0, 4);
 
@@ -212,17 +223,19 @@ export function Dashboard() {
 
   const lowCheckbooks = checkbooks.filter(cb => cb.remaining < 10).sort((a, b) => a.remaining - b.remaining);
 
-  // Monthly stats filtered by selected year
+  // Monthly stats filtered by selected year (Includes instances for "à payer")
   const monthlyStats = (() => {
     const months: Record<string, { total: number; count: number }> = {};
-    emittedChecks.filter(c => c.dueDate.startsWith(String(selectedYear))).forEach(c => {
+    
+    // Process checks
+    emittedChecks.forEach(c => {
       let match = false;
       if (annualFilter === "Total des montants à payer par mois") {
-        match = c.status !== "Payé" && c.status !== "Annulé";
+        match = c.status !== "Payé" && c.status !== "Annulé" && c.dueDate.startsWith(String(selectedYear));
       } else if (annualFilter === "Total des montants déjà payés par mois") {
-        match = c.status === "Payé";
+        match = c.status === "Payé" && c.dueDate.startsWith(String(selectedYear));
       } else if (annualFilter === "Total des montants annulés par mois") {
-        match = c.status === "Annulé";
+        match = c.status === "Annulé" && c.dueDate.startsWith(String(selectedYear));
       }
 
       if (match) {
@@ -232,6 +245,19 @@ export function Dashboard() {
         months[month].count++;
       }
     });
+
+    // Process instances for "à payer" filter
+    if (annualFilter === "Total des montants à payer par mois") {
+      instances.forEach(i => {
+        if (i.date.startsWith(String(selectedYear))) {
+          const month = i.date.substring(5, 7);
+          if (!months[month]) months[month] = { total: 0, count: 0 };
+          months[month].total += i.amount;
+          months[month].count++;
+        }
+      });
+    }
+
     return months;
   })();
 
@@ -298,10 +324,10 @@ export function Dashboard() {
       {/* Top Cards Row */}
       <div className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          <SemiCircleGauge value={enCirculationAmount} total={totalAmount} count={statusCounts["En Circulation"]} amount={enCirculationAmount} label="En Circulation" color="#F59E0B" />
-          <SemiCircleGauge value={enRetardAmount} total={totalAmount} count={statusCounts["En Retard"]} amount={enRetardAmount} label="En Retard" color="#FF5B37" />
-          <SemiCircleGauge value={payeAmount} total={totalAmount} count={statusCounts["Payé"]} amount={payeAmount} label="Payé" color="#22C55E" />
-          <SemiCircleGauge value={annuleAmount} total={totalAmount} count={statusCounts["Annulé"]} amount={annuleAmount} label="Annulé" color="#CBD5E1" />
+          <SemiCircleGauge value={enInstanceAmount} total={totalAmount} count={enInstanceCount} amount={enInstanceAmount} label="En Instance" color="#3B82F6" />
+          <SemiCircleGauge value={enCirculationAmount} total={totalAmount} count={enCirculationCount} amount={enCirculationAmount} label="En Circulation" color="#F59E0B" />
+          <SemiCircleGauge value={enRetardAmount} total={totalAmount} count={enRetardCount} amount={enRetardAmount} label="En Retard" color="#FF5B37" />
+          <SemiCircleGauge value={payeAmount} total={totalAmount} count={payeCount} amount={payeAmount} label="Réglés" color="#22C55E" />
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-full border border-slate-200 text-[11px] font-semibold text-slate-500 shadow-sm">
@@ -442,14 +468,14 @@ export function Dashboard() {
                     <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase">
                       <User className="w-3.5 h-3.5 text-slate-400" /> {partner.name}
                     </div>
-                    <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(getPartnerPaid(partner.id) + getPartnerUnpaid(partner.id)).replace('MAD', 'DH')}</div>
+                    <div className="font-bold text-[12px] text-[#1E293B]">{formatMAD(getPartnerPaid(partner.name) + getPartnerUnpaid(partner.name)).replace('MAD', 'DH')}</div>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3 h-3" /> {formatMAD(getPartnerPaid(partner.id)).replace('MAD', 'DH')}
+                      <CheckCircle2 className="w-3 h-3" /> {formatMAD(getPartnerPaid(partner.name)).replace('MAD', 'DH')}
                     </div>
                     <div className="flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                      <Activity className="w-3 h-3" /> {formatMAD(getPartnerUnpaid(partner.id)).replace('MAD', 'DH')}
+                      <Activity className="w-3 h-3" /> {formatMAD(getPartnerUnpaid(partner.name)).replace('MAD', 'DH')}
                     </div>
                   </div>
                 </div>
