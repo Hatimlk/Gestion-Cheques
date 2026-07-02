@@ -13,6 +13,7 @@ interface NewCheckModalProps {
     partnerName: string;
     amount: number;
     type: CheckType;
+    instanceId?: number;
   } | null;
 }
 
@@ -132,6 +133,8 @@ export function NewCheckModal({ isOpen, onClose, editCheck, prefillData }: NewCh
         amount: num,
         facture: facture || undefined,
         note: note || undefined,
+        status: prefillData?.instanceId ? "Payé" : undefined,
+        instanceIdToDelete: prefillData?.instanceId
       });
     }
     onClose();

@@ -33,7 +33,7 @@ const NAV_GROUPS = [
       { name: "Réglés", path: "/regles", icon: FileCheck },
       { name: "Instances", path: "/instances", icon: Clock },
       { name: "Calendrier", path: "/calendrier", icon: CalendarDays },
-      { name: "Les Clients", path: "/partenaires", icon: Users },
+      { name: "Partenaires", path: "/partenaires", icon: Users },
       { name: "Impression", path: "/impression", icon: Printer },
     ]
   },
@@ -51,9 +51,8 @@ export function Sidebar() {
 
   return (
     <div className="w-[240px] bg-slate-900 h-screen flex flex-col text-slate-300">
-      <div className="p-6 flex items-center gap-[10px]">
-        <span className="text-[22px]">🏦</span>
-        <span className="text-[18px] font-extrabold tracking-tight text-primary">Gadimat<span className="text-white font-semibold ml-1">Chèques</span></span>
+      <div className="p-6 flex items-center justify-center">
+        <img src="/Logo Gadimat.png" alt="Gadimat Chèques" className="h-[40px] w-auto object-contain" />
       </div>
 
       <nav className="flex-1 py-4 overflow-y-auto hide-scrollbar">

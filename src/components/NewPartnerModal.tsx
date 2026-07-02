@@ -64,18 +64,8 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
         {/* Content */}
         <div className="p-6">
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-700 mb-1">Type de Partenaire</label>
-              <select 
-                value={type} 
-                onChange={(e) => setType(e.target.value as PartnerType)} 
-                className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
-                required
-              >
-                <option value="Client">Client</option>
-                <option value="Fournisseur">Fournisseur</option>
-              </select>
-            </div>
+            {/* Hidden field to keep default type state */}
+            <input type="hidden" value={type} />
             <div>
               <label className="block text-[12px] font-semibold text-slate-700 mb-1">Raison Sociale / Nom</label>
               <input 

@@ -46,6 +46,7 @@ const checkSchema = z.object({
   amount: z.number().positive('Le montant doit être positif'),
   note: z.string().max(2000).optional().nullable(),
   facture: z.string().max(200).optional().nullable(),
+  status: z.string().optional(),
 });
 
 const checkUpdateSchema = z.object({

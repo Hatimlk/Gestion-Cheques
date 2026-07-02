@@ -5,16 +5,14 @@ import { NewPartnerModal } from "@/components/NewPartnerModal";
 
 export function Partners() {
   const { partnerList, addPartnerListItem, updatePartnerListItem, deletePartnerListItem } = useApp();
-  const [activeTab, setActiveTab] = useState<"Tous" | "Client" | "Fournisseur">("Tous");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [partnerToEdit, setPartnerToEdit] = useState<PartnerListItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredPartners = partnerList.filter(p => {
-    const matchesTab = activeTab === "Tous" || p.type === activeTab;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.contact.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
+    return matchesSearch;
   });
 
   const handleSavePartner = (data: Omit<PartnerListItem, "id">) => {
@@ -56,20 +54,7 @@ export function Partners() {
       </div>
 
       <div className="bg-white rounded-[12px] border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-[6px]">
-            {["Tous", "Client", "Fournisseur"].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`px-3 py-1.5 rounded-[4px] text-[12px] font-medium transition-all duration-200 border-none cursor-pointer ${
-                  activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-end gap-4">
 
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -90,7 +75,6 @@ export function Partners() {
             <thead>
               <tr>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Nom du Partenaire</th>
-                <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Type</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Contact</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Solde (MAD)</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100 text-right">Actions</th>
@@ -102,15 +86,10 @@ export function Partners() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-                        {partner.type === "Client" ? <Users className="w-4 h-4" /> : <Briefcase className="w-4 h-4" />}
+                        <Users className="w-4 h-4" />
                       </div>
                       <span className="font-semibold text-slate-900">{partner.name}</span>
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 text-[10px] font-bold rounded-[4px] ${partner.type === 'Client' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
-                      {partner.type}
-                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col">
@@ -137,7 +116,7 @@ export function Partners() {
               ))}
               {filteredPartners.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500 border-b border-slate-50">
+                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500 border-b border-slate-50">
                     Aucun partenaire trouvé.
                   </td>
                 </tr>

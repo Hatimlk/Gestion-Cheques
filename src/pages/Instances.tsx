@@ -82,6 +82,7 @@ export function Instances() {
     partnerName: string;
     amount: number;
     type: "Chèque" | "Effet";
+    instanceId?: number;
   } | null>(null);
 
   const filteredInstances = instances.filter(inst => {
@@ -105,7 +106,7 @@ export function Instances() {
     if (sortBy === "alphabetical") {
       return a.partnerName.localeCompare(b.partnerName);
     }
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
 
   // Statistics
@@ -672,7 +673,8 @@ export function Instances() {
                                   facture: inst.facture,
                                   partnerName: inst.partnerName,
                                   amount: inst.amount,
-                                  type: inst.mdp === "Effet" ? "Effet" : "Chèque"
+                                  type: inst.mdp === "Effet" ? "Effet" : "Chèque",
+                                  instanceId: inst.id
                                 });
                                 setIsPaymentModalOpen(true);
                               }}

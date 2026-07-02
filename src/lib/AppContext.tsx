@@ -240,17 +240,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addCheck = useCallback(async (data: {
     bankAccountId: string; checkbookId?: string; type: CheckType; number: string;
     partnerId: string; partnerName: string; emissionDate: string; dueDate: string;
-    amount: number; facture?: string; note?: string;
+    amount: number; facture?: string; note?: string; status?: CheckStatus; instanceIdToDelete?: number;
   }) => {
     try {
-      const check = await api.post<Check>('/checks', data);
+      const { instanceIdToDelete, ...apiData } = data;
+      const check = await api.post<Check>('/checks', apiData);
       setChecks(prev => [check, ...prev]);
-      if (data.checkbookId) {
+      if (apiData.checkbookId) {
         setCheckbooks(prev => prev.map(cb =>
-          cb.id === data.checkbookId ? { ...cb, remaining: Math.max(0, cb.remaining - 1) } : cb
+          cb.id === apiData.checkbookId ? { ...cb, remaining: Math.max(0, cb.remaining - 1) } : cb
         ));
       }
-      if (check.facture) {
+      
+      if (instanceIdToDelete) {
+        await api.delete(`/instances/${instanceIdToDelete}`);
+        setInstances(prev => prev.filter(inst => inst.id !== instanceIdToDelete));
+      } else if (check.facture) {
         setInstances(insts => insts.map(inst => {
           if (inst.facture === check.facture) {
             const updates: Partial<Instance> = { mdp: check.type };

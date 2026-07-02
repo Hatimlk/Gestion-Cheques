@@ -34,10 +34,10 @@ router.get('/', async (_req, res) => {
 
 router.post('/', validate(checkSchema), async (req, res) => {
   try {
-    const { bankAccountId, checkbookId, type, number, partnerId, partnerName, emissionDate, dueDate, amount, note, facture } = req.body;
+    const { bankAccountId, checkbookId, type, number, partnerId, partnerName, emissionDate, dueDate, amount, note, facture, status: bodyStatus } = req.body;
     const due = new Date(dueDate);
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const status = due < today ? 'En Retard' : 'En Circulation';
+    const status = bodyStatus || (due < today ? 'En Retard' : 'En Circulation');
     const id = `ch_${Date.now()}`;
 
     await db.query(
