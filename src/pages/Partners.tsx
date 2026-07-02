@@ -76,7 +76,6 @@ export function Partners() {
               <tr>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Nom du Partenaire</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Contact</th>
-                <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Solde (MAD)</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100 text-right">Actions</th>
               </tr>
             </thead>
@@ -97,11 +96,7 @@ export function Partners() {
                       <span className="text-[10px] text-slate-500">{partner.phone}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`font-bold ${partner.balance > 0 ? 'text-green-600' : partner.balance < 0 ? 'text-red-600' : 'text-slate-900'}`}>
-                      {partner.balance.toLocaleString('fr-FR')}
-                    </span>
-                  </td>
+
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => handleEdit(partner)} title="Modifier" className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[6px] bg-transparent border-none cursor-pointer transition-colors">
@@ -116,7 +111,7 @@ export function Partners() {
               ))}
               {filteredPartners.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500 border-b border-slate-50">
+                  <td colSpan={3} className="px-4 py-8 text-center text-slate-500 border-b border-slate-50">
                     Aucun partenaire trouvé.
                   </td>
                 </tr>

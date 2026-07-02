@@ -44,7 +44,7 @@ export default function App() {
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Suspense fallback={<LoadingFallback />}><Dashboard /></Suspense>} />
             <Route path="comptes" element={<Suspense fallback={<LoadingFallback />}><BankAccounts /></Suspense>} />
-            <Route path="emis" element={<Suspense fallback={<LoadingFallback />}><IssuedChecks /></Suspense>} />
+            {/* <Route path="emis" element={<Suspense fallback={<LoadingFallback />}><IssuedChecks /></Suspense>} /> */}
             <Route path="regles" element={<Suspense fallback={<LoadingFallback />}><RegleChecks /></Suspense>} />
             <Route path="instances" element={<Suspense fallback={<LoadingFallback />}><Instances /></Suspense>} />
             <Route path="impression" element={<Suspense fallback={<LoadingFallback />}><PrintModule /></Suspense>} />
