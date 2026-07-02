@@ -400,7 +400,20 @@ export function Instances() {
           }
 
           // Parse amount
-          let amountVal = parseFloat(String(row[amountCol]).replace(/[^0-9.-]/g, ""));
+          let rawAmount = String(row[amountCol]).trim();
+          // Remove all spaces (often used as thousands separators in French formatting)
+          rawAmount = rawAmount.replace(/\s/g, "");
+          // If there is a comma, we treat it as the decimal separator.
+          // Example: "7 512,00" -> "7512,00" -> "7512.00"
+          // "2.054.400,00" -> "2054400.00"
+          if (rawAmount.includes(",")) {
+            // Remove any dots that might be used as thousands separators
+            rawAmount = rawAmount.replace(/\./g, "");
+            // Replace the comma with a dot for parseFloat
+            rawAmount = rawAmount.replace(",", ".");
+          }
+          let amountVal = parseFloat(rawAmount.replace(/[^0-9.-]/g, ""));
+          
           if (isNaN(amountVal)) {
             continue; // skip rows with invalid amount
           }
