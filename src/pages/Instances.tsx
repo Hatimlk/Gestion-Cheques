@@ -300,7 +300,7 @@ export function Instances() {
           const row = rawDataArrays[i].map(cell => String(cell).toLowerCase().replace(/[^a-z0-9]/g, ""));
           
           const hasFacture = row.some(c => c.includes("facture") || c.includes("nfacture") || c.includes("numero"));
-          const hasFournisseur = row.some(c => c.includes("fournisseur") || c.includes("partenaire") || c.includes("client"));
+          const hasFournisseur = row.some(c => c.includes("fournisseur") || c.includes("partenaire") || c.includes("client") || c.includes("beneficiaire"));
           const hasMontant = row.some(c => c.includes("montant") || c.includes("somme"));
 
           if (hasFacture && hasFournisseur && hasMontant) {
