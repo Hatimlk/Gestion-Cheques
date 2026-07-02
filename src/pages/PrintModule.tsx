@@ -77,7 +77,7 @@ export function PrintModule() {
     }
 
     if (state) {
-      if (state.checkNumber) setIsFromExisting(true);
+      if (state.checkNumber || state.source === "instance") setIsFromExisting(true);
       if (state.bankType) setBankType(state.bankType);
       if (state.amount) setAmount(state.amount);
       if (state.payee) setPayee(state.payee);

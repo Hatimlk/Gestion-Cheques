@@ -693,7 +693,8 @@ export function Instances() {
                                   date: formatDateFr(inst.date),
                                   dueDate: formatDateFr(inst.date),
                                   cause: inst.facture,
-                                  type: inst.mdp === "Effet" ? "Effet" : "Chèque"
+                                  type: inst.mdp === "Effet" ? "Effet" : "Chèque",
+                                  source: "instance"
                                 };
                                 localStorage.setItem("printData", JSON.stringify(printState));
                                 window.open("/impression", "_blank");
