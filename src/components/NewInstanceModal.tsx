@@ -25,7 +25,7 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
   const [paymentDate, setPaymentDate] = useState<Date | null>(null);
   const [observation, setObservation] = useState("");
 
-  const suppliers = partnerList.filter(p => p.type === "Fournisseur");
+  const suppliers = [...partnerList].sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     if (editInstance) {
@@ -50,7 +50,7 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
       setDate(null);
       setFacture("");
       setSupplierType("select");
-      setPartnerId(suppliers[0]?.id ? String(suppliers[0].id) : "");
+      setPartnerId("");
       setCustomPartnerName("");
       setAmount("");
       setPaymentDelay("120 jrs");
@@ -59,7 +59,7 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
       setPaymentDate(null);
       setObservation("");
     }
-  }, [editInstance, isOpen, partnerList]);
+  }, [editInstance, isOpen]);
 
   if (!isOpen) return null;
 
