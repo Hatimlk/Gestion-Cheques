@@ -138,6 +138,21 @@ export function Instances() {
     return filteredInstances;
   };
 
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedInstanceIds.length} facture(s) en instance ?`)) return;
+    
+    // Process deletions sequentially or concurrently. Doing it sequentially to avoid overwhelming the server
+    for (const id of selectedInstanceIds) {
+      try {
+        await deleteInstance(id, true);
+      } catch (err) {
+        console.error("Failed to delete instance", id, err);
+      }
+    }
+    
+    setSelectedInstanceIds([]);
+  };
+
   const handleExportCSV = (separator = ',') => {
     const items = getInstancesToExport();
     const headers = ["DATE", "DUREE", "MOIS", "FACTURE", "FOURNISSEUR / BÉNÉFICIAIRE", "MONTANT", "DELAI DE PAIEMENT", "CONVENTION", "MDP", "DATE DE PAIEMENT", "OBSERVATION"];
@@ -588,6 +603,17 @@ export function Instances() {
                 </>
               )}
             </div>
+
+            {selectedInstanceIds.length > 0 && (
+              <button 
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 bg-red-500 text-white px-3 py-2 rounded-[6px] text-[12px] font-semibold hover:bg-red-600 transition shadow-sm border-none cursor-pointer"
+                title="Supprimer la sélection"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Supprimer ({selectedInstanceIds.length})</span>
+              </button>
+            )}
           </div>
         </div>
 

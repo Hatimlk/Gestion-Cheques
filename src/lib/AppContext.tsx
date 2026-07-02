@@ -52,7 +52,7 @@ interface AppContextType {
   deletePartnerListItem: (id: number) => Promise<void>;
   addInstance: (data: Omit<Instance, "id">) => Promise<void>;
   updateInstance: (id: number, data: Partial<Instance>) => Promise<void>;
-  deleteInstance: (id: number) => Promise<void>;
+  deleteInstance: (id: number, skipConfirm?: boolean) => Promise<void>;
   addUser: (data: Omit<User, "id"> & { password: string }) => Promise<void>;
   updateUser: (id: number, data: Partial<User> & { password?: string }) => Promise<void>;
   deleteUser: (id: number) => Promise<void>;
@@ -446,8 +446,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const deleteInstance = useCallback(async (id: number) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette facture en instance ?")) return;
+  const deleteInstance = useCallback(async (id: number, skipConfirm?: boolean) => {
+    if (!skipConfirm && !window.confirm("Êtes-vous sûr de vouloir supprimer cette facture en instance ?")) return;
     try {
       await api.delete(`/instances/${id}`);
       setInstances(prev => prev.filter(inst => inst.id !== id));
