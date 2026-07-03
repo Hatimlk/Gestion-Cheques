@@ -45,7 +45,7 @@ const maskRib = (rib: string) => {
 };
 
 export function RegleChecks() {
-  const { checks, bankAccounts, updateCheckStatus, addCheck } = useApp();
+  const { checks, bankAccounts, updateCheckStatus, addCheck, instances } = useApp();
   const navigate = useNavigate();
   const [checkToView, setCheckToView] = useState<Check | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,8 +57,28 @@ export function RegleChecks() {
   const [selectedCheckIds, setSelectedCheckIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string>("Tous");
 
-  // Filter only paid (Réglé) checks
-  const regleChecks = checks.filter(c => c.status === "Payé");
+  // Filter only paid (Réglé) checks and paid instances without checks
+  const paidChecks = checks.filter(c => c.status === "Payé");
+  const checkFactures = new Set(checks.map(c => c.facture).filter(Boolean));
+  
+  const paidInstancesWithoutChecks = instances
+    .filter(i => i.paymentDate && !checkFactures.has(i.facture))
+    .map(i => ({
+      id: `inst_${i.id}`,
+      bankAccountId: "",
+      type: (i.mdp as any) || "Autre",
+      number: "-",
+      partnerId: i.partnerId || "",
+      partnerName: i.partnerName,
+      emissionDate: i.date,
+      dueDate: i.paymentDate!,
+      amount: i.amount,
+      status: "Payé" as any,
+      facture: i.facture,
+      note: i.observation || ""
+    }));
+
+  const regleChecks = [...paidChecks, ...paidInstancesWithoutChecks];
 
   const filteredChecks = regleChecks.filter(c => {
     const matchesType = typeFilter === "Tous" || c.type === typeFilter;
@@ -129,7 +149,7 @@ export function RegleChecks() {
     
     const rows = checksToExport.map(check => {
       const account = bankAccounts.find(a => a.id === check.bankAccountId);
-      const bankName = account?.bankName || "Inconnu";
+      const bankName = account?.bankName || (check.type === "Virement" ? "Virement Bancaire" : (check.type === "Espèce" ? "Espèce/Caisse" : "Autre Mode"));
       
       return [
         bankName,
@@ -168,7 +188,7 @@ export function RegleChecks() {
 
     const tableRows = checksToExport.map(check => {
       const account = bankAccounts.find(a => a.id === check.bankAccountId);
-      const bankName = account?.bankName || "Inconnu";
+      const bankName = account?.bankName || (check.type === "Virement" ? "Virement Bancaire" : (check.type === "Espèce" ? "Espèce/Caisse" : "Autre Mode"));
       return `
         <tr>
           <td style="border: 1px solid #ddd; padding: 8px;">${bankName}</td>
@@ -467,6 +487,8 @@ export function RegleChecks() {
                 <option value="Tous">Tous les types</option>
                 <option value="Chèque">Chèque</option>
                 <option value="Effet">Effet</option>
+                <option value="Virement">Virement</option>
+                <option value="Espèce">Espèce</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -552,7 +574,7 @@ export function RegleChecks() {
             <tbody className="divide-y divide-slate-100">
               {filteredChecks.map((check) => {
                 const account = bankAccounts.find(a => a.id === check.bankAccountId);
-                const bankName = account?.bankName || "Inconnu";
+                const bankName = account?.bankName || (check.type === "Virement" ? "Virement Bancaire" : (check.type === "Espèce" ? "Espèce/Caisse" : "Autre Mode"));
                 const rib = account?.rib || "";
                 const logoPath = getBankLogo(bankName);
 
@@ -584,34 +606,44 @@ export function RegleChecks() {
                               <div className="absolute left-8 top-1/2 -translate-y-1/2 z-40 bg-white rounded-[12px] shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-slate-100 py-2 w-40 flex flex-col gap-1" onClick={e => e.stopPropagation()}>
                                 <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-l border-b border-slate-100 rotate-45"></div>
                                 
-                                <button onClick={() => { updateCheckStatus(check.id, 'En Circulation'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
-                                  <div className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center shrink-0">
-                                    <RefreshCw className="w-2.5 h-2.5" strokeWidth={3} />
-                                  </div>
-                                  <span className="text-orange-500 text-[11px] font-bold">Réactiver (Circulation)</span>
-                                </button>
+                                {check.id.startsWith("inst_") ? (
+                                  <div className="px-4 py-2 text-[10px] text-slate-500 text-center">Géré dans Instances</div>
+                                ) : (
+                                  <>
+                                    <button onClick={() => { updateCheckStatus(check.id, 'En Circulation'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
+                                      <div className="w-4 h-4 rounded-full bg-orange-500 text-white flex items-center justify-center shrink-0">
+                                        <RefreshCw className="w-2.5 h-2.5" strokeWidth={3} />
+                                      </div>
+                                      <span className="text-orange-500 text-[11px] font-bold">Réactiver (Circulation)</span>
+                                    </button>
 
-                                <button onClick={() => { updateCheckStatus(check.id, 'Annulé'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
-                                  <div className="w-4 h-4 rounded-full bg-slate-400 text-white flex items-center justify-center shrink-0">
-                                    <X className="w-2.5 h-2.5" strokeWidth={3} />
-                                  </div>
-                                  <span className="text-slate-500 text-[11px] font-bold">Annuler</span>
-                                </button>
+                                    <button onClick={() => { updateCheckStatus(check.id, 'Annulé'); setActionMenuOpenId(null); }} className="flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer relative z-10">
+                                      <div className="w-4 h-4 rounded-full bg-slate-400 text-white flex items-center justify-center shrink-0">
+                                        <X className="w-2.5 h-2.5" strokeWidth={3} />
+                                      </div>
+                                      <span className="text-slate-500 text-[11px] font-bold">Annuler</span>
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </>
                           )}
                         </div>
                         <span title="Voir détails">
-                          <Eye
-                            onClick={() => setCheckToView(check)}
-                            className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
-                          />
+                          {check.id.startsWith("inst_") ? null : (
+                            <Eye
+                              onClick={() => setCheckToView(check as Check)}
+                              className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+                            />
+                          )}
                         </span>
                         <span title="Imprimer">
-                          <Printer
-                            onClick={() => handlePrint(check)}
-                            className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
-                          />
+                          {check.id.startsWith("inst_") ? null : (
+                            <Printer
+                              onClick={() => handlePrint(check as Check)}
+                              className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+                            />
+                          )}
                         </span>
                       </div>
                     </td>
@@ -632,7 +664,7 @@ export function RegleChecks() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-col items-start gap-1">
-                        <span className={cn("px-2 py-0.5 rounded-[4px] text-[10px] font-bold text-white", check.type === 'Effet' ? 'bg-[#FF9800]' : 'bg-[#1E293B]')}>
+                        <span className={cn("px-2 py-0.5 rounded-[4px] text-[10px] font-bold text-white", check.type === 'Effet' ? 'bg-[#FF9800]' : (check.type === 'Chèque' ? 'bg-[#1E293B]' : 'bg-slate-500'))}>
                           {check.type}
                         </span>
                         <span className="font-bold text-slate-800 text-[11px]">{check.number}</span>
