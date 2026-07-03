@@ -46,7 +46,7 @@ const BANKS = [
 
 export function PrintModule() {
   const location = useLocation();
-  const { addCheck, bankAccounts, addInstance } = useApp();
+  const { addCheck, bankAccounts, addInstance, partnerList } = useApp();
 
   const [bankType, setBankType] = useState("BANQUE POPULAIRE - Chèque");
   const [amount, setAmount] = useState("");
@@ -292,8 +292,14 @@ export function PrintModule() {
             <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1 flex items-center gap-1">
               👤 A l'ordre de
             </label>
+            <datalist id="partners-list">
+              {partnerList.map(p => (
+                <option key={p.id} value={p.name} />
+              ))}
+            </datalist>
             <input
               type="text"
+              list="partners-list"
               placeholder="Fournisseur / Bénéficiaire"
               value={payee}
               onChange={(e) => setPayee(e.target.value)}

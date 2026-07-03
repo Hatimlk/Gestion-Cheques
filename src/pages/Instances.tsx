@@ -62,7 +62,7 @@ const formatDateFr = (dateStr: string) => {
 };
 
 export function Instances() {
-  const { instances, deleteInstance, addInstance } = useApp();
+  const { instances, deleteInstance, addInstance, updateInstance } = useApp();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editInstance, setEditInstance] = useState<Instance | null>(null);
@@ -707,15 +707,9 @@ export function Instances() {
                         {!inst.paymentDate && (
                           <span title="Payer cette facture">
                             <CreditCard
-                              onClick={() => {
-                                setPaymentPrefillData({
-                                  facture: inst.facture,
-                                  partnerName: inst.partnerName,
-                                  amount: inst.amount,
-                                  type: inst.mdp === "Effet" ? "Effet" : "Chèque",
-                                  instanceId: inst.id
-                                });
-                                setIsPaymentModalOpen(true);
+                              onClick={async () => {
+                                const today = new Date().toISOString().split("T")[0];
+                                await updateInstance(inst.id, { paymentDate: today });
                               }}
                               className="w-4 h-4 text-slate-400 hover:text-green-600 cursor-pointer transition-colors"
                             />
