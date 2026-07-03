@@ -145,14 +145,10 @@ export function RegleChecks() {
 
   const handleExportCSV = (separator = ',') => {
     const checksToExport = getChecksToExport();
-    const headers = ["Compte Bancaire", "Type", "Numéro", "Fournisseur / Bénéficiaire", "Date d'Émission", "Date d'Échéance", "Montant", "Facture", "Statut", "Note"];
+    const headers = ["Type", "Numéro", "Fournisseur / Bénéficiaire", "Date d'Émission", "Date d'Échéance", "Montant", "Facture", "Statut", "Note"];
     
     const rows = checksToExport.map(check => {
-      const account = bankAccounts.find(a => a.id === check.bankAccountId);
-      const bankName = account?.bankName || (check.type === "Virement" ? "Virement Bancaire" : (check.type === "Espèce" ? "Espèce/Caisse" : "Autre Mode"));
-      
       return [
-        bankName,
         check.type,
         check.number,
         check.partnerName,
@@ -187,11 +183,8 @@ export function RegleChecks() {
     if (!printWindow) return;
 
     const tableRows = checksToExport.map(check => {
-      const account = bankAccounts.find(a => a.id === check.bankAccountId);
-      const bankName = account?.bankName || (check.type === "Virement" ? "Virement Bancaire" : (check.type === "Espèce" ? "Espèce/Caisse" : "Autre Mode"));
       return `
         <tr>
-          <td style="border: 1px solid #ddd; padding: 8px;">${bankName}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${check.type} / ${check.number}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${check.partnerName}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${check.emissionDate}</td>
@@ -223,7 +216,6 @@ export function RegleChecks() {
           <table>
             <thead>
               <tr>
-                <th>Compte Bancaire</th>
                 <th>Type / Numéro</th>
                 <th>Fournisseur / Bénéficiaire</th>
                 <th>Date d'Émission</th>
@@ -563,7 +555,6 @@ export function RegleChecks() {
                   />
                 </th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Action</th>
-                <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Compte Bancaire</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Type/Numéro</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Fournisseur/Bénéficiaire / Date d'Émission</th>
                 <th className="px-4 py-4 font-bold text-slate-600 text-[11px] tracking-wide">Date d'Échéance</th>
@@ -573,11 +564,6 @@ export function RegleChecks() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredChecks.map((check) => {
-                const account = bankAccounts.find(a => a.id === check.bankAccountId);
-                const bankName = account?.bankName || (check.type === "Virement" ? "Virement Bancaire" : (check.type === "Espèce" ? "Espèce/Caisse" : "Autre Mode"));
-                const rib = account?.rib || "";
-                const logoPath = getBankLogo(bankName);
-
                 return (
                   <tr key={check.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
@@ -648,21 +634,6 @@ export function RegleChecks() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 shadow-sm border border-slate-100 flex items-center justify-center">
-                          {logoPath ? (
-                            <img src={logoPath} alt={bankName} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full bg-[#FF5B37]"></div>
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-[#1E293B] text-[12px] leading-tight uppercase">{bankName}</span>
-                          <span className="text-slate-400 font-semibold text-[11px]">{maskRib(rib)}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
                       <div className="flex flex-col items-start gap-1">
                         <span className={cn("px-2 py-0.5 rounded-[4px] text-[10px] font-bold text-white", check.type === 'Effet' ? 'bg-[#FF9800]' : (check.type === 'Chèque' ? 'bg-[#1E293B]' : 'bg-slate-500'))}>
                           {check.type}
@@ -709,7 +680,7 @@ export function RegleChecks() {
               })}
               {filteredChecks.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
                     Aucun chèque/effet réglé trouvé.
                   </td>
                 </tr>
