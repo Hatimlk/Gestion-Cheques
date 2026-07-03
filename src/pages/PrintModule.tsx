@@ -485,7 +485,8 @@ export function PrintModule() {
             position: absolute;
             right: 0;
             left: auto;
-            top: 0;
+            top: 50%;
+            transform: translateY(-50%);
             margin: 0;
             padding: 0;
             font-family: Arial, Helvetica, sans-serif !important;
