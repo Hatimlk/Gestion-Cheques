@@ -19,8 +19,8 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
   const [partnerId, setPartnerId] = useState("");
   const [customPartnerName, setCustomPartnerName] = useState("");
   const [amount, setAmount] = useState("");
-  const [paymentDelay, setPaymentDelay] = useState("120 jrs");
-  const [convention, setConvention] = useState("120 jrs");
+  const [paymentDelay, setPaymentDelay] = useState("120 Jours");
+  const [convention, setConvention] = useState("120 Jours");
   const [mdp, setMdp] = useState("Chèque");
   const [paymentDate, setPaymentDate] = useState<Date | null>(null);
   const [observation, setObservation] = useState("");
@@ -53,8 +53,8 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
       setPartnerId("");
       setCustomPartnerName("");
       setAmount("");
-      setPaymentDelay("120 jrs");
-      setConvention("120 jrs");
+      setPaymentDelay("120 Jours");
+      setConvention("120 Jours");
       setMdp("");
       setPaymentDate(null);
       setObservation("");
@@ -236,25 +236,39 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
               <label className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-800 font-bold z-10">Délai de Paiement</label>
-              <input 
-                type="text" 
-                className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[13px] outline-none focus:border-slate-800 focus:border-[1.5px]"
-                placeholder="Ex: 120 jrs"
+              <select 
+                className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-700 bg-white appearance-none outline-none focus:border-slate-800 focus:border-[1.5px]"
                 value={paymentDelay}
                 onChange={e => setPaymentDelay(e.target.value)}
                 required
-              />
+              >
+                <option value="30 Jours">30 Jours</option>
+                <option value="60 Jours">60 Jours</option>
+                <option value="90 Jours">90 Jours</option>
+                <option value="120 Jours">120 Jours</option>
+                {paymentDelay && !["30 Jours", "60 Jours", "90 Jours", "120 Jours"].includes(paymentDelay) && (
+                  <option value={paymentDelay}>{paymentDelay}</option>
+                )}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
             <div className="relative">
               <label className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-800 font-bold z-10">Convention</label>
-              <input 
-                type="text" 
-                className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[13px] outline-none focus:border-slate-800 focus:border-[1.5px]"
-                placeholder="Ex: 120 jrs"
+              <select 
+                className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-700 bg-white appearance-none outline-none focus:border-slate-800 focus:border-[1.5px]"
                 value={convention}
                 onChange={e => setConvention(e.target.value)}
                 required
-              />
+              >
+                <option value="30 Jours">30 Jours</option>
+                <option value="60 Jours">60 Jours</option>
+                <option value="90 Jours">90 Jours</option>
+                <option value="120 Jours">120 Jours</option>
+                {convention && !["30 Jours", "60 Jours", "90 Jours", "120 Jours"].includes(convention) && (
+                  <option value={convention}>{convention}</option>
+                )}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
