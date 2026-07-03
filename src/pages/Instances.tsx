@@ -709,7 +709,7 @@ export function Instances() {
                             <CreditCard
                               onClick={async () => {
                                 const today = new Date().toISOString().split("T")[0];
-                                await updateInstance(inst.id, { paymentDate: today });
+                                await updateInstance(inst.id, { ...inst, paymentDate: today });
                               }}
                               className="w-4 h-4 text-slate-400 hover:text-green-600 cursor-pointer transition-colors"
                             />
