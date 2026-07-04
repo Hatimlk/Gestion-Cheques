@@ -40,5 +40,21 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Erreur serveur.' });
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Gadimat API running on port ${PORT}`));
+const db = require('./db');
+
+async function startServer() {
+  try {
+    await db.query('ALTER TABLE partners ADD COLUMN convention VARCHAR(100);');
+    console.log('Auto-migration: added convention to partners');
+  } catch (err) {
+    // 42701 is the PostgreSQL code for duplicate_column
+    if (err.code !== '42701') {
+      console.error('Auto-migration error (non-fatal):', err.message);
+    }
+  }
+
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => console.log(`Gadimat API running on port ${PORT}`));
+}
+
+startServer();
