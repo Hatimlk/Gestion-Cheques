@@ -22,6 +22,7 @@ export interface PartnerListItem {
   contact: string;
   phone: string;
   balance: number;
+  convention?: string;
 }
 
 export const COMPANY_NAME = "GADIMAT S.A";

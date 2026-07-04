@@ -10,6 +10,7 @@ export interface Partner {
   contact: string;
   phone: string;
   balance: number;
+  convention?: string;
 }
 
 interface NewPartnerModalProps {
@@ -25,6 +26,7 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
   const [contact, setContact] = useState("");
   const [phone, setPhone] = useState("");
   const [balance, setBalance] = useState<number>(0);
+  const [convention, setConvention] = useState<string>("120 Jours");
 
   useEffect(() => {
     if (editPartner) {
@@ -33,12 +35,14 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
       setContact(editPartner.contact);
       setPhone(editPartner.phone);
       setBalance(editPartner.balance);
+      setConvention(editPartner.convention || "120 Jours");
     } else {
       setType("Client");
       setName("");
       setContact("");
       setPhone("");
       setBalance(0);
+      setConvention("120 Jours");
     }
   }, [editPartner, isOpen]);
 
@@ -46,7 +50,7 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    onSave({ type, name, contact, phone, balance });
+    onSave({ type, name, contact, phone, balance, convention });
     onClose();
   };
 
@@ -99,6 +103,26 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
                   className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
                   required 
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Convention</label>
+                <input 
+                  list="partner-convention-options"
+                  type="text" 
+                  value={convention}
+                  onChange={(e) => setConvention(e.target.value)}
+                  placeholder="Ex: 120 Jours" 
+                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
+                />
+                <datalist id="partner-convention-options">
+                  <option value="30 Jours" />
+                  <option value="60 Jours" />
+                  <option value="90 Jours" />
+                  <option value="120 Jours" />
+                </datalist>
               </div>
             </div>
 

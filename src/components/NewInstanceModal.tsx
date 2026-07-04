@@ -183,7 +183,14 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
                 <select 
                   className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-700 bg-white appearance-none outline-none focus:border-slate-800 focus:border-[1.5px]"
                   value={partnerId} 
-                  onChange={e => setPartnerId(e.target.value)} 
+                  onChange={e => {
+                    const newId = e.target.value;
+                    setPartnerId(newId);
+                    const selectedSup = suppliers.find(sup => String(sup.id) === newId);
+                    if (selectedSup && selectedSup.convention) {
+                      setConvention(selectedSup.convention);
+                    }
+                  }} 
                   required={suppliers.length > 0}
                 >
                   <option value="" disabled>Sélectionner un fournisseur/bénéficiaire</option>
