@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS partners (
   contact VARCHAR(100),
   phone VARCHAR(50),
   balance NUMERIC(15,2) DEFAULT 0,
+  convention VARCHAR(100),
   created_at TIMESTAMP DEFAULT NOW()
 );
 

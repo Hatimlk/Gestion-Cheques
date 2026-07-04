@@ -73,6 +73,7 @@ const partnerSchema = z.object({
   contact: z.string().max(100).optional().default(''),
   phone: z.string().max(50).optional().default(''),
   balance: z.number().optional(),
+  convention: z.string().max(100).optional().nullable(),
 });
 
 const partnerUpdateSchema = z.object({
@@ -81,6 +82,7 @@ const partnerUpdateSchema = z.object({
   contact: z.string().max(100).optional(),
   phone: z.string().max(50).optional(),
   balance: z.number().optional(),
+  convention: z.string().max(100).optional().nullable(),
 });
 
 const instanceSchema = z.object({
