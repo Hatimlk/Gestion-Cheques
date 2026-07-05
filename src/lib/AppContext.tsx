@@ -62,13 +62,13 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
-async function loadAll() {
+async function loadAll(userRole?: UserRole) {
   return Promise.all([
     api.get<BankAccount[]>('/bank-accounts'),
     api.get<Checkbook[]>('/checkbooks'),
     api.get<Check[]>('/checks'),
     api.get<PartnerListItem[]>('/partners'),
-    api.get<User[]>('/users').catch(() => []),
+    userRole === 'Administrateur' ? api.get<User[]>('/users').catch(() => []) : Promise.resolve([]),
     api.get<Instance[]>('/instances'),
   ]);
 }
@@ -93,7 +93,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         try {
           const user = await api.get<User>('/auth/me');
           setCurrentUser(user);
-          const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll();
+          const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll(user.role);
           setBankAccounts(accounts);
           setCheckbooks(books);
           setChecks(chks);
@@ -118,9 +118,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let isSubscribed = true;
 
     const syncData = async () => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated || !currentUser) return;
       try {
-        const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll();
+        const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll(currentUser.role);
         if (!isSubscribed) return;
         setBankAccounts(accounts);
         setCheckbooks(books);
@@ -152,7 +152,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
       localStorage.setItem('gadimat_token', token);
       setCurrentUser(user);
-      const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll();
+      const [accounts, books, chks, partners, allUsers, allInstances] = await loadAll(user.role);
       setBankAccounts(accounts);
       setCheckbooks(books);
       setChecks(chks);
