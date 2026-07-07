@@ -485,7 +485,7 @@ export function PrintModule() {
             position: absolute;
             right: 0;
             left: auto;
-            top: 49%;
+            top: 47.5%;
             transform: translateY(-50%);
             margin: 0;
             padding: 0;
