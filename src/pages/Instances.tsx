@@ -73,7 +73,10 @@ export function Instances() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<number[]>([]);
-  const [sortBy, setSortBy] = useState<"date" | "alphabetical">("date");
+  const [sortBy, setSortBy] = useState<"date" | "alphabetical" | "delay" | "convention" | "mdp">("date");
+  const [delayFilter, setDelayFilter] = useState<string>("all");
+  const [conventionFilter, setConventionFilter] = useState<string>("all");
+  const [mdpFilter, setMdpFilter] = useState<string>("all");
 
   // Add states for NewCheckModal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -85,10 +88,19 @@ export function Instances() {
     instanceId?: number;
   } | null>(null);
 
+  const uniqueDelays = Array.from(new Set(instances.map(i => i.paymentDelay).filter(Boolean)));
+  const uniqueConventions = Array.from(new Set(instances.map(i => i.convention).filter(Boolean)));
+  const uniqueMdps = Array.from(new Set(instances.map(i => i.mdp).filter(Boolean)));
+
   const filteredInstances = instances.filter(inst => {
     // Status Filter
     if (statusFilter === "pending" && inst.paymentDate) return false;
     if (statusFilter === "paid" && !inst.paymentDate) return false;
+    
+    // New Filters
+    if (delayFilter !== "all" && inst.paymentDelay !== delayFilter) return false;
+    if (conventionFilter !== "all" && inst.convention !== conventionFilter) return false;
+    if (mdpFilter !== "all" && inst.mdp !== mdpFilter) return false;
 
     // Search query
     const matchesSearch = inst.partnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,6 +117,15 @@ export function Instances() {
   }).sort((a, b) => {
     if (sortBy === "alphabetical") {
       return a.partnerName.localeCompare(b.partnerName);
+    }
+    if (sortBy === "delay") {
+      return (a.paymentDelay || "").localeCompare(b.paymentDelay || "");
+    }
+    if (sortBy === "convention") {
+      return (a.convention || "").localeCompare(b.convention || "");
+    }
+    if (sortBy === "mdp") {
+      return (a.mdp || "").localeCompare(b.mdp || "");
     }
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
@@ -562,6 +583,45 @@ export function Instances() {
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
+            <div className="relative flex-1 min-w-[120px] max-w-[150px]">
+              <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-slate-400 font-medium">Délai</span>
+              <select 
+                value={delayFilter}
+                onChange={(e) => setDelayFilter(e.target.value)}
+                className="w-full appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-[6px] text-[12px] font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent"
+              >
+                <option value="all">Tous</option>
+                {uniqueDelays.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            <div className="relative flex-1 min-w-[120px] max-w-[150px]">
+              <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-slate-400 font-medium">Convention</span>
+              <select 
+                value={conventionFilter}
+                onChange={(e) => setConventionFilter(e.target.value)}
+                className="w-full appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-[6px] text-[12px] font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent"
+              >
+                <option value="all">Toutes</option>
+                {uniqueConventions.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            <div className="relative flex-1 min-w-[120px] max-w-[150px]">
+              <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-slate-400 font-medium">Paiement</span>
+              <select 
+                value={mdpFilter}
+                onChange={(e) => setMdpFilter(e.target.value)}
+                className="w-full appearance-none pl-3 pr-8 py-2 border border-slate-200 rounded-[6px] text-[12px] font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-transparent"
+              >
+                <option value="all">Tous</option>
+                {uniqueMdps.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
             <div className="relative flex-1 max-w-[200px]">
               <span className="absolute -top-2 left-2 bg-white px-1 text-[10px] text-slate-400 font-medium">Trier par</span>
               <select 
@@ -571,6 +631,9 @@ export function Instances() {
               >
                 <option value="date">Date de facture</option>
                 <option value="alphabetical">Ordre alphabétique (A-Z)</option>
+                <option value="delay">Délai de paiement</option>
+                <option value="convention">Convention</option>
+                <option value="mdp">Mode de paiement</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
