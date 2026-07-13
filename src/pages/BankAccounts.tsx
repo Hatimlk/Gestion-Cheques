@@ -1,26 +1,17 @@
-import { formatMAD, getBankLogo } from "@/lib/utils";
+import { getBankLogo } from "@/lib/utils";
 import { useApp, COMPANY_NAME } from "@/lib/AppContext";
 import { BankAccount } from "@/lib/types";
-import { Plus, User, Info, Trash2, Pencil, AlertTriangle } from "lucide-react";
+import { Plus, User, Info, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import { NewAccountModal } from "@/components/NewAccountModal";
-import { NewCheckbookModal } from "@/components/NewCheckbookModal";
 
 
 export function BankAccounts() {
-  const { bankAccounts, checks, deleteBankAccount } = useApp();
+  const { bankAccounts, deleteBankAccount } = useApp();
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [isCheckbookModalOpen, setIsCheckbookModalOpen] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState<BankAccount | null>(null);
 
-  const getAccountCounts = (accountId: string) => {
-    const accountChecks = checks.filter(c => c.bankAccountId === accountId);
-    return {
-      nonPaid: accountChecks.filter(c => c.status === "En Circulation" || c.status === "En Retard" || c.status === "Déposé" || c.status === "Impayé"),
-      paid: accountChecks.filter(c => c.status === "Payé"),
-      cancelled: accountChecks.filter(c => c.status === "Annulé"),
-    };
-  };
+
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto">
@@ -69,21 +60,12 @@ export function BankAccounts() {
               <thead>
                 <tr>
                   <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Banque</th>
-                  <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Carnet</th>
-                  <th className="px-4 py-3 uppercase font-semibold text-[10px] text-red-500 border-b-2 border-slate-100"><span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Impayé</span></th>
-                  <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Payé</th>
-                  <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Annulé</th>
                   <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {bankAccounts.map(account => {
-                  const counts = getAccountCounts(account.id);
                   const logoPath = getBankLogo(account.bankName);
-                  const cleanRib = account.rib.replace(/\s+/g, '');
-                  const maskedRib = cleanRib.length >= 8 
-                    ? `${cleanRib.substring(0, 4)}xxx${cleanRib.substring(cleanRib.length - 4)}`
-                    : account.rib;
 
                   return (
                     <tr key={account.id} className="hover:bg-slate-50/50 transition-colors">
@@ -103,33 +85,11 @@ export function BankAccounts() {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-900 text-[13px] uppercase leading-tight">{account.bankName}</span>
-                            <span className="text-[12px] font-medium text-slate-400">{maskedRib}</span>
+                            <span className="text-[12px] font-medium text-slate-400">{account.rib}</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <button onClick={() => setIsCheckbookModalOpen(true)} className="bg-primary text-white flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[11px] font-semibold hover:opacity-90 transition border-none cursor-pointer">
-                          <Plus className="w-3.5 h-3.5" /> Ajouter un Carnet
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-[#FFF4E5] text-[#FF9800] text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] min-w-[18px] text-center">{counts.nonPaid.length}</span>
-                          <span className="font-bold text-[12px] text-slate-800">{formatMAD(counts.nonPaid.reduce((s, c) => s + c.amount, 0)).replace(/[a-zA-Z]/g, "").trim()}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-[#E6F8F0] text-[#00C853] text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] min-w-[18px] text-center">{counts.paid.length}</span>
-                          <span className="font-bold text-[12px] text-slate-800">{formatMAD(counts.paid.reduce((s, c) => s + c.amount, 0)).replace(/[a-zA-Z]/g, "").trim()}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-[#FFEBEE] text-[#F44336] text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] min-w-[18px] text-center">{counts.cancelled.length}</span>
-                          <span className="font-bold text-[12px] text-slate-800">{formatMAD(counts.cancelled.reduce((s, c) => s + c.amount, 0)).replace(/[a-zA-Z]/g, "").trim()}</span>
-                        </div>
-                      </td>
+
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => { setAccountToEdit(account); setIsAccountModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[6px] bg-transparent border-none cursor-pointer transition-colors">
@@ -156,7 +116,6 @@ export function BankAccounts() {
       </div>
 
       <NewAccountModal isOpen={isAccountModalOpen} onClose={() => { setIsAccountModalOpen(false); setAccountToEdit(null); }} editAccount={accountToEdit} />
-      <NewCheckbookModal isOpen={isCheckbookModalOpen} onClose={() => setIsCheckbookModalOpen(false)} />
     </div>
   );
 }

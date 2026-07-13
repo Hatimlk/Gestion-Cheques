@@ -38,18 +38,6 @@ const sections = [
     ]
   },
   {
-    title: "Les Carnets",
-    icon: FileEdit,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-    description: "Suivi des carnets de chèques et d'effets (traites).",
-    features: [
-      "Enregistrez de nouveaux carnets en précisant le numéro de début et de fin.",
-      "Suivez la consommation des chèques (disponibles, émis, annulés).",
-      "Recevez des alertes lorsqu'un carnet est presque épuisé."
-    ]
-  },
-  {
     title: "Émis (Chèques et Effets)",
     icon: FileUp,
     color: "text-amber-500",

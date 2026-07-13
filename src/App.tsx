@@ -7,7 +7,6 @@ import { Layout } from "./components/layout/Layout";
 const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
 const BankAccounts = lazy(() => import("./pages/BankAccounts").then(m => ({ default: m.BankAccounts })));
 const IssuedChecks = lazy(() => import("./pages/IssuedChecks").then(m => ({ default: m.IssuedChecks })));
-const Checkbooks = lazy(() => import("./pages/Checkbooks").then(m => ({ default: m.Checkbooks })));
 const Calendar = lazy(() => import("./pages/Calendar").then(m => ({ default: m.Calendar })));
 const Partners = lazy(() => import("./pages/Partners").then(m => ({ default: m.Partners })));
 const Roles = lazy(() => import("./pages/Roles").then(m => ({ default: m.Roles })));
@@ -49,7 +48,6 @@ export default function App() {
             <Route path="instances" element={<Suspense fallback={<LoadingFallback />}><Instances /></Suspense>} />
             <Route path="impression" element={<Suspense fallback={<LoadingFallback />}><PrintModule /></Suspense>} />
             <Route path="roles" element={<Suspense fallback={<LoadingFallback />}><AdminRoute><Roles /></AdminRoute></Suspense>} />
-            <Route path="carnets" element={<Suspense fallback={<LoadingFallback />}><Checkbooks /></Suspense>} />
             <Route path="calendrier" element={<Suspense fallback={<LoadingFallback />}><Calendar /></Suspense>} />
             <Route path="partenaires" element={<Suspense fallback={<LoadingFallback />}><Partners /></Suspense>} />
             <Route path="guide" element={<Suspense fallback={<LoadingFallback />}><Guide /></Suspense>} />

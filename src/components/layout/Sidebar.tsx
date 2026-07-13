@@ -28,8 +28,6 @@ const NAV_GROUPS = [
   {
     title: "CHÈQUES ET EFFETS",
     items: [
-      { name: "Les Carnets", path: "/carnets", icon: FileEdit },
-
       { name: "Réglés", path: "/regles", icon: FileCheck },
       { name: "Instances", path: "/instances", icon: Clock },
       { name: "Calendrier", path: "/calendrier", icon: CalendarDays },

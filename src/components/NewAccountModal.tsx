@@ -25,15 +25,24 @@ interface NewAccountModalProps {
 export function NewAccountModal({ isOpen, onClose, editAccount }: NewAccountModalProps) {
   const { addBankAccount, updateBankAccount } = useApp();
   const [bankName, setBankName] = useState("");
-  const [rib, setRib] = useState("");
+  const [agence, setAgence] = useState("");
+  const [numCompte, setNumCompte] = useState("");
 
   useEffect(() => {
     if (editAccount) {
       setBankName(editAccount.bankName);
-      setRib(editAccount.rib);
+      if (editAccount.rib.includes('/')) {
+        const parts = editAccount.rib.split('/');
+        setAgence(parts[0].trim());
+        setNumCompte(parts.slice(1).join('/').trim());
+      } else {
+        setAgence("");
+        setNumCompte(editAccount.rib);
+      }
     } else {
       setBankName("");
-      setRib("");
+      setAgence("");
+      setNumCompte("");
     }
   }, [editAccount, isOpen]);
 
@@ -43,10 +52,11 @@ export function NewAccountModal({ isOpen, onClose, editAccount }: NewAccountModa
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const ribValue = agence ? `${agence} / ${numCompte}` : numCompte;
     if (isEditing) {
-      updateBankAccount(editAccount.id, { bankName, rib });
+      updateBankAccount(editAccount.id, { bankName, rib: ribValue });
     } else {
-      addBankAccount({ bankName, rib });
+      addBankAccount({ bankName, rib: ribValue });
     }
     onClose();
   };
@@ -88,14 +98,22 @@ export function NewAccountModal({ isOpen, onClose, editAccount }: NewAccountModa
             <div>
               <input
                 type="text"
-                value={rib}
-                onChange={(e) => setRib(e.target.value)}
-                placeholder="RIB"
+                value={agence}
+                onChange={(e) => setAgence(e.target.value)}
+                placeholder="Agence (ex: 48 Bd Mohamed V, Casablanca)"
+                className="w-full px-4 py-3.5 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-slate-400"
+                required
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                value={numCompte}
+                onChange={(e) => setNumCompte(e.target.value)}
+                placeholder="Num de Compte (ex: 021 010000171030001101 84)"
                 className="w-full px-4 py-3.5 border border-slate-200 rounded-[8px] text-[13px] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono placeholder:text-slate-400 placeholder:font-sans"
                 required
-                minLength={24}
               />
-              <p className="text-[12px] font-medium text-slate-500 mt-2 ml-1">Le RIB doit contenir au moins 24 chiffres.</p>
             </div>
 
             <div className="pt-4 flex justify-end gap-3 mt-6">

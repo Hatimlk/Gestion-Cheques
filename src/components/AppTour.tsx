@@ -165,14 +165,6 @@ export function AppTour() {
       icon: <span className="text-xl">🔐</span>
     },
     {
-      target: "[data-tour='Les Carnets']",
-      title: "Les Carnets",
-      content: "Gérez vos carnets de chèques et d'effets. Suivez les numéros de chèques disponibles et les souches consommées.",
-      placement: "right",
-      route: "/carnets",
-      icon: <span className="text-xl">📓</span>
-    },
-    {
       target: "[data-tour='Émis']",
       title: "Émissions",
       content: "Le cœur de l'application : retrouvez la liste complète des chèques et effets émis, et suivez leur statut en temps réel.",
