@@ -1,5 +1,18 @@
-import { X } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
 import { useState, useEffect, type FormEvent } from "react";
+
+const MOROCCAN_BANKS = [
+  "Attijariwafa Bank",
+  "Banque Populaire",
+  "Bank of Africa",
+  "CIH Bank",
+  "Crédit Agricole du Maroc",
+  "Société Générale",
+  "BMCI",
+  "Crédit du Maroc",
+  "Al Barid Bank",
+  "CFG Bank"
+];
 
 export type PartnerType = "Client" | "Fournisseur";
 
@@ -95,13 +108,23 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[12px] font-semibold text-slate-700 mb-1">Banque</label>
-                <input 
-                  type="text" 
-                  value={banque}
-                  onChange={(e) => setBanque(e.target.value)}
-                  placeholder="Ex: Crédit du Maroc" 
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
-                />
+                <div className="relative">
+                  <select
+                    value={banque}
+                    onChange={(e) => setBanque(e.target.value)}
+                    className={`w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white cursor-pointer ${!banque ? 'text-slate-400' : 'text-slate-700'}`}
+                  >
+                    <option value="" disabled hidden>Ex: Crédit du Maroc</option>
+                    {MOROCCAN_BANKS.map((bank) => (
+                      <option key={bank} value={bank} className="text-slate-700">
+                        {bank}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-slate-700 mb-1">Agence</label>
