@@ -11,7 +11,8 @@ import {
   BookOpen,
   FileCheck,
   Clock,
-  LogOut
+  LogOut,
+  Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
@@ -32,6 +33,7 @@ const NAV_GROUPS = [
       { name: "Instances", path: "/instances", icon: Clock },
       { name: "Calendrier", path: "/calendrier", icon: CalendarDays },
       { name: "Partenaires", path: "/partenaires", icon: Users },
+      { name: "Ordres de Virement", path: "/virements", icon: Send },
       { name: "Impression", path: "/impression", icon: Printer },
     ]
   },
