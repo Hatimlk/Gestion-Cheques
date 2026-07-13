@@ -23,8 +23,9 @@ interface NewPartnerModalProps {
 export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPartnerModalProps) {
   const [type, setType] = useState<PartnerType>("Client");
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [phone, setPhone] = useState("");
+  const [banque, setBanque] = useState("");
+  const [agence, setAgence] = useState("");
+  const [numCompte, setNumCompte] = useState("");
   const [balance, setBalance] = useState<number>(0);
   const [convention, setConvention] = useState<string>("120 Jours");
 
@@ -32,15 +33,23 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
     if (editPartner) {
       setType(editPartner.type);
       setName(editPartner.name);
-      setContact(editPartner.contact);
-      setPhone(editPartner.phone);
+      if (editPartner.contact && editPartner.contact.includes(' / ')) {
+        const parts = editPartner.contact.split(' / ');
+        setBanque(parts[0]);
+        setAgence(parts.slice(1).join(' / '));
+      } else {
+        setBanque(editPartner.contact || "");
+        setAgence("");
+      }
+      setNumCompte(editPartner.phone || "");
       setBalance(editPartner.balance);
       setConvention(editPartner.convention || "120 Jours");
     } else {
       setType("Client");
       setName("");
-      setContact("");
-      setPhone("");
+      setBanque("");
+      setAgence("");
+      setNumCompte("");
       setBalance(0);
       setConvention("120 Jours");
     }
@@ -50,6 +59,8 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const contact = agence ? `${banque} / ${agence}` : banque;
+    const phone = numCompte;
     onSave({ type, name, contact, phone, balance, convention });
     onClose();
   };
@@ -83,30 +94,38 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Personne à contacter</label>
+                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Banque</label>
                 <input 
                   type="text" 
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  placeholder="Ex: Hassan T." 
+                  value={banque}
+                  onChange={(e) => setBanque(e.target.value)}
+                  placeholder="Ex: Crédit du Maroc" 
                   className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
-                  required 
                 />
               </div>
               <div>
-                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Téléphone</label>
+                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Agence</label>
                 <input 
                   type="text" 
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ex: 0600000000" 
+                  value={agence}
+                  onChange={(e) => setAgence(e.target.value)}
+                  placeholder="Ex: 48 Bd Mohamed V..." 
                   className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
-                  required 
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 mb-1">Num de Compte</label>
+                <input 
+                  type="text" 
+                  value={numCompte}
+                  onChange={(e) => setNumCompte(e.target.value)}
+                  placeholder="Ex: 021 010..." 
+                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
+                />
+              </div>
               <div>
                 <label className="block text-[12px] font-semibold text-slate-700 mb-1">Convention</label>
                 <input 

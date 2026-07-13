@@ -75,7 +75,7 @@ export function Partners() {
             <thead>
               <tr>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Nom du Partenaire</th>
-                <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Contact</th>
+                <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Coordonnées Bancaires</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Convention</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100 text-right">Actions</th>
               </tr>
@@ -93,8 +93,8 @@ export function Partners() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col">
-                      <span className="text-slate-900">{partner.contact}</span>
-                      <span className="text-[10px] text-slate-500">{partner.phone}</span>
+                      <span className="text-slate-900 font-medium">{partner.contact}</span>
+                      <span className="text-[11px] font-mono text-slate-500">{partner.phone}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
