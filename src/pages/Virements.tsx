@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Printer, Plus, Trash2, Send } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import { formatMAD } from "@/lib/utils";
-// @ts-ignore
-import n2words from "n2words";
+import { toCardinal } from "n2words/fr-FR";
 
 interface VirementLine {
   id: string;
@@ -224,7 +223,7 @@ export function Virements() {
                 <div className="border-2 border-black font-bold px-4 py-1 min-w-[200px] text-right mr-2">
                   {formatMAD(line.amount || 0).replace('MAD', '').trim()}
                 </div>
-                <span>MAD ({n2words(line.amount || 0, { lang: 'fr' })} dhs)</span>
+                <span>MAD ({toCardinal(line.amount || 0)} dhs)</span>
               </div>
               
               <div className="flex mb-12">
