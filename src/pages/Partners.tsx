@@ -48,8 +48,8 @@ export function Partners() {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
+        const ab = evt.target?.result;
+        const wb = XLSX.read(ab, { type: 'array' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json<any>(ws);
@@ -58,16 +58,34 @@ export function Partners() {
         const newPartners: Omit<PartnerListItem, "id">[] = data.map((row) => {
           const normalizedRow: Record<string, any> = {};
           for (const key in row) {
-            normalizedRow[key.toLowerCase().trim()] = row[key];
+            const cleanKey = key.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').toLowerCase().trim();
+            normalizedRow[cleanKey] = row[key];
           }
 
+          const getVal = (...keys: string[]) => {
+             for (const k of keys) {
+               if (normalizedRow[k] !== undefined && normalizedRow[k] !== null) {
+                 return String(normalizedRow[k]);
+               }
+             }
+             return "";
+          };
+
+          const nom = getVal('raison social/nom', 'raison social / nom', 'nom', 'name', 'partenaire', 'client', 'fournisseur');
+          const banque = getVal('banque', 'bank');
+          const agence = getVal('agence', 'agency');
+          const contactStr = banque + (agence ? ` - ${agence}` : "");
+          const compte = getVal('num de compte', 'numéro de compte', 'compte', 'num compte', 'n° de compte', 'n° compte');
+          const convention = getVal('convention');
+          const typeVal = getVal('type').toLowerCase();
+
           return {
-            name: String(normalizedRow['nom'] || normalizedRow['name'] || normalizedRow['partenaire'] || normalizedRow['client'] || normalizedRow['fournisseur'] || ""),
-            type: (String(normalizedRow['type']).toLowerCase() === "fournisseur" ? "Fournisseur" : "Client") as PartnerType,
-            contact: String(normalizedRow['banque'] || normalizedRow['contact'] || normalizedRow['coordonnées'] || ""),
-            phone: String(normalizedRow['compte'] || normalizedRow['phone'] || normalizedRow['n° compte'] || normalizedRow['téléphone'] || ""),
-            convention: String(normalizedRow['convention'] || ""),
-            balance: Number(normalizedRow['solde'] || normalizedRow['balance']) || 0,
+            name: nom,
+            type: (typeVal === "fournisseur" ? "Fournisseur" : "Fournisseur") as PartnerType, // Defaulting to Fournisseur as requested for these lists typically
+            contact: contactStr || getVal('contact', 'coordonnées'),
+            phone: compte || getVal('phone', 'téléphone'),
+            convention: convention,
+            balance: Number(getVal('solde', 'balance')) || 0,
           };
         }).filter(p => p.name.trim() !== "");
 
@@ -83,7 +101,7 @@ export function Partners() {
         fileInputRef.current.value = "";
       }
     };
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleBulkDelete = async () => {
