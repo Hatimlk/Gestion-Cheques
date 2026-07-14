@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Printer, Plus, Trash2, Send } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import { formatMAD } from "@/lib/utils";
+// @ts-ignore
+import n2words from "n2words";
 
 interface VirementLine {
   id: string;
@@ -191,65 +193,62 @@ export function Virements() {
       </div>
 
       {/* Zone d'impression */}
-      <div className="hidden print:block print-container bg-white" style={{ width: '100%', maxWidth: '210mm', minHeight: '297mm', margin: '0 auto' }}>
-        <div className="mb-10 text-right">
-          <p className="text-[14px] font-medium text-black m-0">Le {new Date(date).toLocaleDateString('fr-FR')}</p>
-        </div>
+      <div className="hidden print:block w-full">
+        {lines.map((line, idx) => (
+          <div key={line.id || idx} className="print-container bg-white text-black font-sans text-[14px]" style={{ width: '100%', maxWidth: '210mm', minHeight: '297mm', margin: '0 auto', position: 'relative', pageBreakAfter: idx < lines.length - 1 ? 'always' : 'auto', padding: '10mm 20mm' }}>
+            
+            <div className="flex justify-center mt-8">
+              <div className="ml-auto w-[350px]">
+                <div className="flex mb-1"><span className="w-[80px]">Banque:</span><span className="font-bold">{selectedAccount?.bankName}</span></div>
+                <div className="flex mb-1"><span className="w-[80px]">Agence:</span><span>Bd Hassan II BP 246, Agadir</span></div>
+                <div className="flex mb-1"><span className="w-[80px]">N° de RIB:</span><span>{selectedAccount?.rib}</span></div>
+              </div>
+            </div>
 
-        <div className="mb-10">
-          <p className="text-[14px] font-bold text-black m-0">À l'attention de : {selectedAccount?.bankName}</p>
-          <p className="text-[14px] text-black m-0 mt-1">Objet : Ordre de Virement</p>
-        </div>
+            <div className="mt-16 text-center pl-[200px]">
+              Agadir, le <span className="inline-block w-[100px] text-right">{new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+            </div>
 
-        <div className="mb-6">
-          <p className="text-[14px] text-black leading-relaxed">
-            Messieurs,<br /><br />
-            Par le débit de notre compte N° <strong>{selectedAccount?.rib}</strong> tenu dans vos livres,
-            nous vous prions de bien vouloir effectuer les virements suivants :
-          </p>
-        </div>
+            <div className="mt-12 flex">
+              <div className="w-[100px]">Objet:</div>
+              <div className="underline font-medium">Ordre de virement</div>
+            </div>
 
-        <table className="w-full mb-8 border-collapse">
-          <thead>
-            <tr>
-              <th className="border border-black px-4 py-2 text-left text-[12px] font-bold uppercase w-1/4">Bénéficiaire</th>
-              <th className="border border-black px-4 py-2 text-left text-[12px] font-bold uppercase w-1/5">Banque</th>
-              <th className="border border-black px-4 py-2 text-left text-[12px] font-bold uppercase w-1/3">N° de Compte (RIB)</th>
-              <th className="border border-black px-4 py-2 text-right text-[12px] font-bold uppercase">Montant</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((line, idx) => (
-              <tr key={idx}>
-                <td className="border border-black px-4 py-2 text-[13px]">{line.beneficiary}</td>
-                <td className="border border-black px-4 py-2 text-[13px]">{line.bank}</td>
-                <td className="border border-black px-4 py-2 text-[13px] font-mono">{line.rib}</td>
-                <td className="border border-black px-4 py-2 text-[13px] text-right font-medium">{formatMAD(line.amount || 0)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={3} className="border border-black px-4 py-2 text-right text-[13px] font-bold uppercase">
-                Total
-              </td>
-              <td className="border border-black px-4 py-2 text-right text-[14px] font-bold">
-                {formatMAD(totalAmount)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+            <div className="mt-12">
+              <p className="mb-8">Monsieur,</p>
+              
+              <p className="mb-8">Nous vous prions de bien vouloir virer, par le débit de notre compte :</p>
+              
+              <div className="flex items-center mb-8">
+                <div className="w-[120px]">la somme de :</div>
+                <div className="border-2 border-black font-bold px-4 py-1 min-w-[200px] text-right mr-2">
+                  {formatMAD(line.amount || 0).replace('MAD', '').trim()}
+                </div>
+                <span>MAD ({n2words(line.amount || 0, { lang: 'fr' })} dhs)</span>
+              </div>
+              
+              <div className="flex mb-12">
+                <div className="w-[120px]">en faveur de :</div>
+                <div>
+                  <div className="border-2 border-black font-bold px-4 py-1 min-w-[350px] text-center mb-1 uppercase">
+                    {line.beneficiary}
+                  </div>
+                  <div>{line.bank?.split(' - ')[0]}</div>
+                  <div>{line.bank?.split(' - ')[1] || ""}</div>
+                  <div className="tracking-wider">{line.rib}</div>
+                </div>
+              </div>
 
-        <div className="mb-20">
-          <p className="text-[14px] text-black m-0">
-            Dans l'attente de l'exécution de cet ordre, veuillez agréer, Messieurs, l'expression de nos salutations distinguées.
-          </p>
-        </div>
+              <p className="mb-2">Nous vous remercions de votre collaboration et vous prions d'agréer, Monsieur,</p>
+              <p>l'expression de nos sentiments distingués.</p>
+            </div>
 
-        <div className="text-right pr-20">
-          <p className="text-[14px] font-bold text-black m-0">La Direction</p>
-          {/* Espace pour signature et cachet */}
-        </div>
+            <div className="absolute bottom-[50mm] right-[40mm] text-center">
+              <div className="font-bold mb-1">Le Directeur Général</div>
+              <div>Franck GUILLET</div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <style>{`
@@ -265,11 +264,9 @@ export function Virements() {
             visibility: visible;
           }
           .print-container {
-            position: absolute;
             left: 0;
             top: 0;
             width: 100%;
-            padding: 20mm;
           }
         }
       `}</style>

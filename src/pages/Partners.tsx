@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Plus, Users, Briefcase, Edit2, Trash2, Upload } from "lucide-react";
+import { Search, Plus, Users, Briefcase, Edit2, Trash2, Upload, ArrowUpDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useApp, PartnerListItem, PartnerType } from "@/lib/AppContext";
 import { NewPartnerModal } from "@/components/NewPartnerModal";
@@ -10,12 +10,19 @@ export function Partners() {
   const [partnerToEdit, setPartnerToEdit] = useState<PartnerListItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredPartners = partnerList.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.contact.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
+  }).sort((a, b) => {
+    if (sortOrder === "asc") {
+      return a.name.localeCompare(b.name);
+    } else {
+      return b.name.localeCompare(a.name);
+    }
   });
 
   const handleSavePartner = (data: Omit<PartnerListItem, "id">) => {
@@ -184,7 +191,15 @@ export function Partners() {
                     onChange={toggleSelectAll}
                   />
                 </th>
-                <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Nom du Partenaire</th>
+                <th 
+                  className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100 cursor-pointer hover:bg-slate-50 group transition-colors"
+                  onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+                >
+                  <div className="flex items-center gap-1">
+                    Nom du Partenaire
+                    <ArrowUpDown className="w-3 h-3 text-slate-300 group-hover:text-slate-500" />
+                  </div>
+                </th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Coordonnées Bancaires</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Convention</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100 text-right">Actions</th>
