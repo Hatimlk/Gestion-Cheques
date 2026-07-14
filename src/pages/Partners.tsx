@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Search, Plus, Users, Briefcase, Edit2, Trash2, Upload } from "lucide-react";
 import * as XLSX from "xlsx";
-import { useApp, PartnerListItem } from "@/lib/AppContext";
+import { useApp, PartnerListItem, PartnerType } from "@/lib/AppContext";
 import { NewPartnerModal } from "@/components/NewPartnerModal";
 
 export function Partners() {
@@ -56,7 +56,7 @@ export function Partners() {
 
         const newPartners: Omit<PartnerListItem, "id">[] = data.map((row) => ({
           name: row.Nom || row.name || "",
-          type: (row.Type === "Fournisseur" ? "Fournisseur" : "Client"),
+          type: (row.Type === "Fournisseur" ? "Fournisseur" : "Client") as PartnerType,
           contact: row.Banque || row.contact || "",
           phone: row.Compte || row.phone || "",
           convention: row.Convention || row.convention || "",
