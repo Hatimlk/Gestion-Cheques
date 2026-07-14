@@ -96,13 +96,13 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
             <input type="hidden" value={type} />
             <div>
               <label className="block text-[12px] font-semibold text-slate-700 mb-1">Raison Sociale / Nom</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Entreprise Z" 
-                className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
-                required 
+                placeholder="Ex: Entreprise Z"
+                className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                required
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -128,12 +128,12 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-slate-700 mb-1">Agence</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={agence}
                   onChange={(e) => setAgence(e.target.value)}
-                  placeholder="Ex: 48 Bd Mohamed V..." 
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
+                  placeholder="Ex: 48 Bd Mohamed V..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
             </div>
@@ -141,23 +141,23 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[12px] font-semibold text-slate-700 mb-1">Num de Compte</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={numCompte}
                   onChange={(e) => setNumCompte(e.target.value)}
-                  placeholder="Ex: 021 010..." 
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
+                  placeholder="Ex: 021 010..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-slate-700 mb-1">Convention</label>
-                <input 
+                <input
                   list="partner-convention-options"
-                  type="text" 
+                  type="text"
                   value={convention}
                   onChange={(e) => setConvention(e.target.value)}
-                  placeholder="Ex: 120 Jours" 
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" 
+                  placeholder="Ex: 120 Jours"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-[6px] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
                 <datalist id="partner-convention-options">
                   <option value="30 Jours" />
@@ -168,7 +168,7 @@ export function NewPartnerModal({ isOpen, onClose, onSave, editPartner }: NewPar
               </div>
             </div>
 
-            
+
             {/* Footer */}
             <div className="pt-4 flex justify-end gap-3 mt-6 border-t border-slate-100">
               <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-[6px] hover:bg-slate-50 transition cursor-pointer">

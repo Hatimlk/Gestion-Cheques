@@ -1,13 +1,16 @@
-import { useState } from "react";
-import { Search, Plus, Users, Briefcase, Edit2, Trash2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Search, Plus, Users, Briefcase, Edit2, Trash2, Upload } from "lucide-react";
+import * as XLSX from "xlsx";
 import { useApp, PartnerListItem } from "@/lib/AppContext";
 import { NewPartnerModal } from "@/components/NewPartnerModal";
 
 export function Partners() {
-  const { partnerList, addPartnerListItem, updatePartnerListItem, deletePartnerListItem } = useApp();
+  const { partnerList, addPartnerListItem, updatePartnerListItem, deletePartnerListItem, addMultiplePartnerListItems, deleteMultiplePartnerListItems } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [partnerToEdit, setPartnerToEdit] = useState<PartnerListItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredPartners = partnerList.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -38,6 +41,62 @@ export function Partners() {
     setIsModalOpen(true);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json<any>(ws);
+
+        const newPartners: Omit<PartnerListItem, "id">[] = data.map((row) => ({
+          name: row.Nom || row.name || "",
+          type: (row.Type === "Fournisseur" ? "Fournisseur" : "Client"),
+          contact: row.Banque || row.contact || "",
+          phone: row.Compte || row.phone || "",
+          convention: row.Convention || row.convention || "",
+          balance: parseFloat(row.Solde || row.balance || "0"),
+        })).filter(p => p.name.trim() !== "");
+
+        if (newPartners.length > 0) {
+          await addMultiplePartnerListItems(newPartners);
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'importation:", error);
+        alert("Erreur lors de la lecture du fichier Excel.");
+      }
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleBulkDelete = async () => {
+    await deleteMultiplePartnerListItems(selectedIds);
+    setSelectedIds([]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredPartners.length && filteredPartners.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredPartners.map(p => p.id));
+    }
+  };
+
+  const toggleSelectOne = (id: number) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
@@ -46,6 +105,23 @@ export function Partners() {
           <p className="text-[12px] text-slate-500 m-0">Gérez vos clients et fournisseurs.</p>
         </div>
         <div className="flex items-center gap-3">
+          {selectedIds.length > 0 && (
+            <button onClick={handleBulkDelete} className="flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:opacity-90 transition shadow-sm border-none cursor-pointer">
+              <Trash2 className="w-3.5 h-3.5" />
+              Supprimer ({selectedIds.length})
+            </button>
+          )}
+          <input 
+            type="file" 
+            accept=".xlsx, .xls" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            className="hidden" 
+          />
+          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:bg-slate-200 transition shadow-sm border border-slate-200 cursor-pointer">
+            <Upload className="w-3.5 h-3.5" />
+            Importer Excel
+          </button>
           <button onClick={openNewPartnerModal} className="flex items-center gap-2 bg-primary text-white px-3 py-1.5 rounded-[6px] text-[12px] font-semibold hover:opacity-90 transition shadow-sm border-none cursor-pointer">
             <Plus className="w-3.5 h-3.5" />
             Nouveau Partenaire
@@ -74,6 +150,14 @@ export function Partners() {
           <table className="w-full text-left text-[12px] whitespace-nowrap border-collapse">
             <thead>
               <tr>
+                <th className="px-4 py-3 border-b-2 border-slate-100 w-10">
+                  <input 
+                    type="checkbox" 
+                    className="rounded border-slate-300 text-primary focus:ring-primary/20 cursor-pointer"
+                    checked={filteredPartners.length > 0 && selectedIds.length === filteredPartners.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Nom du Partenaire</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Coordonnées Bancaires</th>
                 <th className="px-4 py-3 uppercase font-semibold text-[10px] text-slate-500 border-b-2 border-slate-100">Convention</th>
@@ -82,7 +166,15 @@ export function Partners() {
             </thead>
             <tbody>
               {filteredPartners.map((partner) => (
-                <tr key={partner.id} className="hover:bg-slate-50 border-b border-slate-50">
+                <tr key={partner.id} className={`hover:bg-slate-50 border-b border-slate-50 ${selectedIds.includes(partner.id) ? 'bg-blue-50/50' : ''}`}>
+                  <td className="px-4 py-3">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-slate-300 text-primary focus:ring-primary/20 cursor-pointer"
+                      checked={selectedIds.includes(partner.id)}
+                      onChange={() => toggleSelectOne(partner.id)}
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
@@ -115,7 +207,7 @@ export function Partners() {
               ))}
               {filteredPartners.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500 border-b border-slate-50">
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500 border-b border-slate-50">
                     Aucun partenaire trouvé.
                   </td>
                 </tr>

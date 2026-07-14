@@ -58,6 +58,8 @@ interface AppContextType {
   updateUser: (id: number, data: Partial<User> & { password?: string }) => Promise<void>;
   deleteUser: (id: number) => Promise<void>;
   toggleUserStatus: (id: number) => Promise<void>;
+  addMultiplePartnerListItems: (dataArray: Omit<PartnerListItem, "id">[]) => Promise<void>;
+  deleteMultiplePartnerListItems: (ids: number[]) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -388,6 +390,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const addMultiplePartnerListItems = useCallback(async (dataArray: Omit<PartnerListItem, "id">[]) => {
+    try {
+      const addedPartners = await Promise.all(
+        dataArray.map(data => api.post<PartnerListItem>('/partners', data))
+      );
+      setPartnerList(prev => [...prev, ...addedPartners]);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de l\'ajout des partenaires.');
+    }
+  }, []);
+
+  const deleteMultiplePartnerListItems = useCallback(async (ids: number[]) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ces ${ids.length} partenaires ?`)) return;
+    try {
+      await Promise.all(ids.map(id => api.delete(`/partners/${id}`)));
+      setPartnerList(prev => prev.filter(p => !ids.includes(p.id)));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression de plusieurs partenaires.');
+    }
+  }, []);
+
   // Users
   const addUser = useCallback(async (data: Omit<User, "id"> & { password: string }) => {
     try {
@@ -466,6 +489,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addCheckbook, deleteCheckbook,
       addCheck, updateCheck, updateCheckStatus, deleteCheck,
       addPartnerListItem, updatePartnerListItem, deletePartnerListItem,
+      addMultiplePartnerListItems, deleteMultiplePartnerListItems,
       addInstance, updateInstance, deleteInstance,
       addUser, updateUser, deleteUser, toggleUserStatus,
     }}>
