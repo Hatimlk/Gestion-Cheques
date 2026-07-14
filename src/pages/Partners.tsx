@@ -53,15 +53,23 @@ export function Partners() {
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json<any>(ws);
+        console.log("Données Excel brutes (première ligne) :", data[0]);
 
-        const newPartners: Omit<PartnerListItem, "id">[] = data.map((row) => ({
-          name: row.Nom || row.name || "",
-          type: (row.Type === "Fournisseur" ? "Fournisseur" : "Client") as PartnerType,
-          contact: row.Banque || row.contact || "",
-          phone: row.Compte || row.phone || "",
-          convention: row.Convention || row.convention || "",
-          balance: parseFloat(row.Solde || row.balance || "0"),
-        })).filter(p => p.name.trim() !== "");
+        const newPartners: Omit<PartnerListItem, "id">[] = data.map((row) => {
+          const normalizedRow: Record<string, any> = {};
+          for (const key in row) {
+            normalizedRow[key.toLowerCase().trim()] = row[key];
+          }
+
+          return {
+            name: String(normalizedRow['nom'] || normalizedRow['name'] || normalizedRow['partenaire'] || normalizedRow['client'] || normalizedRow['fournisseur'] || ""),
+            type: (String(normalizedRow['type']).toLowerCase() === "fournisseur" ? "Fournisseur" : "Client") as PartnerType,
+            contact: String(normalizedRow['banque'] || normalizedRow['contact'] || normalizedRow['coordonnées'] || ""),
+            phone: String(normalizedRow['compte'] || normalizedRow['phone'] || normalizedRow['n° compte'] || normalizedRow['téléphone'] || ""),
+            convention: String(normalizedRow['convention'] || ""),
+            balance: Number(normalizedRow['solde'] || normalizedRow['balance']) || 0,
+          };
+        }).filter(p => p.name.trim() !== "");
 
         if (newPartners.length > 0) {
           await addMultiplePartnerListItems(newPartners);
