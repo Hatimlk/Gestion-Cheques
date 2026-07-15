@@ -192,68 +192,73 @@ export function Virements() {
       </div>
 
       {/* Zone d'impression */}
-      <div className="hidden print:block w-full">
+      <div id="print-section" className="hidden print:block w-full">
         {lines.map((line, idx) => (
-          <div key={line.id || idx} className="print-container bg-white text-black font-sans text-[14px]" style={{ width: '100%', maxWidth: '210mm', minHeight: '297mm', margin: '0 auto', position: 'relative', pageBreakAfter: idx < lines.length - 1 ? 'always' : 'auto', padding: '15mm 20mm', boxSizing: 'border-box' }}>
+          <div key={line.id || idx} className="print-container bg-white text-black font-sans text-[13px]">
             
-            <div className="flex justify-end mt-4 pr-4">
-              <div className="w-[400px]">
-                <div className="flex mb-1"><span className="min-w-[100px] font-medium">Banque:</span><span className="font-bold flex-1">{selectedAccount?.bankName}</span></div>
-                <div className="flex mb-1"><span className="min-w-[100px] font-medium">Agence:</span><span className="flex-1">Bd Hassan II BP 246, Agadir</span></div>
-                <div className="flex mb-1"><span className="min-w-[100px] font-medium">N° de Compte:</span><span className="flex-1">{selectedAccount?.rib}</span></div>
+            <div className="flex justify-center pt-8">
+              <div className="ml-auto w-[400px] grid grid-cols-[100px_1fr] gap-1">
+                <div>Banque:</div>
+                <div className="font-bold">{selectedAccount?.bankName}</div>
+                <div>Agence :</div>
+                <div>Bd Hassan II BP 246, Agadir</div>
+                <div>N° de RIB</div>
+                <div>{selectedAccount?.rib}</div>
               </div>
             </div>
 
-            <div className="mt-16 flex justify-end pr-8">
-              <div className="text-right">
-                Agadir, le <span>{new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+            <div className="mt-12 flex justify-center">
+              <div className="ml-auto w-[400px] flex">
+                <div className="w-[200px]">Agadir, le</div>
+                <div>{new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
               </div>
             </div>
 
-            <div className="mt-12 flex">
-              <div className="w-[100px] font-medium">Objet:</div>
-              <div className="underline font-bold">Ordre de virement</div>
+            <div className="mt-12 flex items-center gap-4">
+              <div className="w-[100px]">Objet:</div>
+              <div className="underline">Ordre de virement</div>
             </div>
 
-            <div className="mt-12 space-y-6">
-              <p>Monsieur,</p>
+            <div className="mt-10">
+              <p className="mb-6">Monsieur,</p>
               
-              <p>Nous vous prions de bien vouloir virer, par le débit de notre compte :</p>
+              <p className="mb-6">Nous vous prions de bien vouloir virer, par le débit de notre compte :</p>
               
-              <div className="flex items-center">
-                <div className="w-[120px] font-medium">la somme de :</div>
-                <div className="border border-black font-bold px-4 py-2 min-w-[200px] text-right mr-3">
+              <div className="flex items-center mb-4">
+                <div className="w-[150px]">la somme de :</div>
+                <div className="border border-black px-2 py-1 w-[250px] text-right mr-2 font-medium">
                   {formatMAD(line.amount || 0).replace('MAD', '').trim()}
                 </div>
-                <span className="flex-1">MAD ({toCardinal(line.amount || 0)} dhs)</span>
+                <span>MAD ({toCardinal(line.amount || 0)} dhs)</span>
               </div>
               
-              <div className="flex items-start pt-4">
-                <div className="w-[120px] font-medium mt-2">en faveur de :</div>
+              <div className="flex items-start mb-6">
+                <div className="w-[150px] mt-1">en faveur de :</div>
                 <div className="flex-1">
-                  <div className="border border-black font-bold px-4 py-2 inline-block min-w-[350px] text-center mb-2 uppercase">
+                  <div className="border border-black px-2 py-1 w-[350px] text-center mb-1 uppercase font-bold">
                     {line.beneficiary}
                   </div>
-                  <div className="leading-relaxed">
-                    <div className="font-medium">{line.bank?.split(' - ')[0]}</div>
+                  <div className="text-[12px] leading-snug">
+                    <div>{line.bank?.split(' - ')[0]}</div>
                     {line.bank?.split(' - ')[1] && <div>{line.bank.split(' - ')[1]}</div>}
-                    <div className="tracking-widest font-mono mt-1">{line.rib}</div>
+                    <div>{line.rib}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-8 space-y-2">
+              <div className="mt-8 text-[12.5px] leading-relaxed">
                 <p>Nous vous remercions de votre collaboration et vous prions d'agréer, Monsieur,</p>
                 <p>l'expression de nos sentiments distingués.</p>
               </div>
             </div>
 
-            <div className="mt-16 flex justify-end pr-12">
+            <div className="mt-20 flex justify-end pr-16">
               <div className="text-center">
-                <div className="font-bold mb-8">Le Directeur Général</div>
-                <div className="font-medium">Franck GUILLET</div>
+                <div className="font-bold mb-1 text-[15px] tracking-wide" style={{ fontFamily: 'Georgia, serif' }}>Le Directeur Général</div>
+                <div className="text-[12px]">Franck GUILLET</div>
               </div>
             </div>
+
           </div>
         ))}
       </div>
@@ -270,10 +275,31 @@ export function Virements() {
             margin: 0;
             padding: 0;
           }
-          .print-container {
+          body * {
+            visibility: hidden;
+          }
+          #print-section, #print-section * {
+            visibility: visible;
+          }
+          #print-section {
+            position: absolute;
+            left: 0;
+            top: 0;
             width: 100%;
             margin: 0;
+            padding: 0;
+          }
+          .print-container {
+            width: 100%;
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
             padding: 20mm;
+            box-sizing: border-box;
+            page-break-after: always;
+          }
+          .print-container:last-child {
+            page-break-after: auto;
           }
         }
       `}</style>
