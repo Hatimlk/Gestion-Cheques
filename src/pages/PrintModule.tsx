@@ -13,13 +13,13 @@ interface Position {
 }
 
 const DEFAULT_CHEQUE_POSITIONS: Record<ElementId, Position> = {
-  amountLetters: { x: 180, y: 85 },
-  amountNumbers: { x: 520, y: 45 },
-  payee: { x: 230, y: 140 },
-  place: { x: 310, y: 180 },
-  date: { x: 490, y: 180 },
-  dueDate: { x: 0, y: 0 },
-  cause: { x: 0, y: 0 },
+  amountLetters: { x: 220, y: 100 },
+  amountNumbers: { x: 630, y: 55 },
+  payee: { x: 280, y: 160 },
+  place: { x: 380, y: 210 },
+  date: { x: 600, y: 210 },
+  dueDate: { x: 600, y: 30 },
+  cause: { x: 120, y: 190 },
 };
 
 const DEFAULT_EFFET_POSITIONS: Record<ElementId, Position> = {
@@ -380,7 +380,7 @@ export function PrintModule() {
         {/* Screen Version (Framer Motion) */}
         <div
           className="relative bg-[#FDFBF2] border border-slate-300 shadow-md rounded-[4px] overflow-hidden select-none print:hidden"
-          style={{ width: isEffet ? '800px' : '175mm', height: isEffet ? '350px' : '80mm' }}
+          style={{ width: '800px', height: '350px' }}
         >
           {bgImage && (
             <img
@@ -418,7 +418,7 @@ export function PrintModule() {
         <div
           id="printable-check"
           className="hidden print:block absolute m-0 p-0 bg-transparent border-none shadow-none select-none"
-          style={{ width: isEffet ? '800px' : '175mm', height: isEffet ? '350px' : '80mm' }}
+          style={{ width: '800px', height: '350px' }}
         >
           {elements.map((el) => (
             <div
@@ -467,7 +467,7 @@ export function PrintModule() {
 
       <style>{`
         @page {
-          size: ${isEffet ? 'landscape' : 'portrait'};
+          size: landscape;
           margin: 0 !important;
         }
         @media print {
@@ -482,19 +482,11 @@ export function PrintModule() {
             visibility: visible;
           }
           #printable-check {
-            ${isEffet ? `
-              position: absolute;
-              right: 0;
-              left: auto;
-              top: 47.5%;
-              transform: translateY(-50%);
-            ` : `
-              position: absolute;
-              left: 17.5mm;
-              top: 0;
-              right: auto;
-              transform: none;
-            `}
+            position: absolute;
+            right: 0;
+            left: auto;
+            top: 47.5%;
+            transform: translateY(-50%);
             margin: 0;
             padding: 0;
             font-family: Arial, Helvetica, sans-serif !important;
