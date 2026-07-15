@@ -5,7 +5,7 @@ import { Check } from "@/lib/types";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Printer, Eye, Pencil, Check as CheckIcon, X,
-  FileText, RefreshCw, ChevronDown, Share, FileCheck, FileX, Upload
+  FileText, RefreshCw, ChevronDown, Share, FileCheck, FileX, Upload, Send
 } from "lucide-react";
 import { ViewCheckModal } from "@/components/ViewCheckModal";
 import { DatePicker } from "@/components/DatePicker";
@@ -105,6 +105,7 @@ export function RegleChecks() {
   const totalRegle = regleChecks.reduce((s, c) => s + c.amount, 0);
   const totalCheques = regleChecks.filter(c => c.type === "Chèque").reduce((s, c) => s + c.amount, 0);
   const totalEffets = regleChecks.filter(c => c.type === "Effet").reduce((s, c) => s + c.amount, 0);
+  const totalVirements = regleChecks.filter(c => c.type === "Virement").reduce((s, c) => s + c.amount, 0);
 
   const handlePrint = (check: Check) => {
     const account = bankAccounts.find(a => a.id === check.bankAccountId);
@@ -397,11 +398,11 @@ export function RegleChecks() {
     <div className="space-y-6 max-w-[1400px] mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[22px] mb-1 font-bold text-slate-900 tracking-tight">Chèques/Effets Réglés</h1>
+          <h1 className="text-[22px] mb-1 font-bold text-slate-900 tracking-tight">Chèques/Effets/Virements Réglés</h1>
           <div className="text-[12px] text-slate-500 font-medium flex items-center gap-2">
             <span>Tableau de Bord</span>
             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-            <span>Chèques/Effets Réglés</span>
+            <span>Chèques/Effets/Virements Réglés</span>
           </div>
         </div>
         <div className="flex items-center gap-2 self-start">
@@ -419,7 +420,7 @@ export function RegleChecks() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-full border-[2px] border-green-100 bg-green-50 text-green-500 flex items-center justify-center shrink-0">
             <FileCheck className="w-5 h-5" />
@@ -447,7 +448,16 @@ export function RegleChecks() {
           <div className="flex flex-col">
             <span className="text-[13px] font-bold text-slate-800">Effets Payés</span>
             <span className="text-[11px] font-medium text-slate-500">{regleChecks.filter(c => c.type === "Effet").length} Effets</span>
-            <span className="text-[16px] font-bold text-slate-900 mt-0.5">{formatMAD(totalEffets)}</span>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-[12px] border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-[2px] border-purple-100 bg-purple-50 text-purple-500 flex items-center justify-center shrink-0">
+            <Send className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[13px] font-bold text-slate-800">Virements Payés</span>
+            <span className="text-[11px] font-medium text-slate-500">{regleChecks.filter(c => c.type === "Virement").length} Virements</span>
+            <span className="text-[16px] font-bold text-slate-900 mt-0.5">{formatMAD(totalVirements)}</span>
           </div>
         </div>
       </div>
