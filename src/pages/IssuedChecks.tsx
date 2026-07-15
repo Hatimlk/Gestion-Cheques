@@ -7,7 +7,7 @@ import {
   Search, Plus, Printer, Pencil, Eye,
   FileText, RefreshCw, Bell, FileCheck, FileX,
   ChevronDown, Send, Calendar, Download, FileUp, Filter,
-  Check as CheckIcon, X, Share
+  Check as CheckIcon, X, Share, Trash2
 } from "lucide-react";
 import { NewCheckModal } from "@/components/NewCheckModal";
 import { ViewCheckModal } from "@/components/ViewCheckModal";
@@ -548,6 +548,12 @@ export function IssuedChecks() {
                           <Printer
                             onClick={() => handlePrint(check)}
                             className="w-4 h-4 text-slate-400 hover:text-slate-700 cursor-pointer transition-colors"
+                          />
+                        </span>
+                        <span title="Supprimer">
+                          <Trash2
+                            onClick={() => deleteCheck(check.id)}
+                            className="w-4 h-4 text-slate-400 hover:text-red-600 cursor-pointer transition-colors"
                           />
                         </span>
                       </div>

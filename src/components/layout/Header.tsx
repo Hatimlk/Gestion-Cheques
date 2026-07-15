@@ -4,12 +4,13 @@ import { useState, type FormEvent, useMemo, useRef, useEffect } from "react";
 import { differenceInDays, parseISO, addDays } from "date-fns";
 import type { Notification } from "@/lib/types";
 import { formatMAD } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
-  const { checks, instances } = useApp();
+  const { checks, instances, deleteCheck, deleteInstance } = useApp();
 
   const notifications = useMemo<Notification[]>(() => {
     const today = new Date();
@@ -153,7 +154,10 @@ export function Header() {
                         </div>
                       )}
                       {overdue.map((n) => (
-                        <NotificationItem key={n.id} notification={n} />
+                        <NotificationItem key={n.id} notification={n} onDelete={() => {
+                          if (n.source === "check" && n.checkId) deleteCheck(n.checkId);
+                          else if (n.source === "instance" && n.checkId) deleteInstance(Number(n.checkId));
+                        }} />
                       ))}
 
                       {dueSoon.length > 0 && (
@@ -164,7 +168,10 @@ export function Header() {
                         </div>
                       )}
                       {dueSoon.map((n) => (
-                        <NotificationItem key={n.id} notification={n} />
+                        <NotificationItem key={n.id} notification={n} onDelete={() => {
+                          if (n.source === "check" && n.checkId) deleteCheck(n.checkId);
+                          else if (n.source === "instance" && n.checkId) deleteInstance(Number(n.checkId));
+                        }} />
                       ))}
                     </>
                   )}
@@ -185,7 +192,7 @@ export function Header() {
   );
 }
 
-function NotificationItem({ notification }: { notification: Notification }) {
+function NotificationItem({ notification, onDelete }: { notification: Notification; onDelete?: () => void }) {
   const due = parseISO(notification.dueDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -230,6 +237,13 @@ function NotificationItem({ notification }: { notification: Notification }) {
               ? "À payer dans 1 jour"
               : `À payer dans ${days} jours`}
           </p>
+        </div>
+        <div className="flex flex-col items-end gap-2 ml-2">
+          {onDelete && (
+             <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-slate-300 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50 border-none cursor-pointer bg-transparent" title="Supprimer définitivement">
+                <Trash2 className="w-4 h-4" />
+             </button>
+          )}
         </div>
       </div>
     </div>
