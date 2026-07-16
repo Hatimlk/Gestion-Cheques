@@ -226,16 +226,16 @@ export function Virements() {
               
               <div className="flex items-center mb-4">
                 <div className="w-[150px]">la somme de :</div>
-                <div className="border border-black px-2 py-1 w-[250px] text-right mr-2 font-medium">
+                <div className="border-[2px] border-black px-2 py-1 w-[180px] text-right font-medium">
                   {formatMAD(line.amount || 0).replace('MAD', '').trim()}
                 </div>
-                <span>MAD ({toCardinal(line.amount || 0)} dhs)</span>
+                <span className="ml-1">MAD({toCardinal(line.amount || 0)} dhs )</span>
               </div>
               
               <div className="flex items-start mb-6">
                 <div className="w-[150px] mt-1">en faveur de :</div>
                 <div className="flex-1">
-                  <div className="border border-black px-2 py-1 w-[350px] text-center mb-1 uppercase font-bold">
+                  <div className="border-[2px] border-black px-2 py-1 w-[450px] text-center mb-1 uppercase font-bold">
                     {line.beneficiary}
                   </div>
                   <div className="text-[12px] leading-snug">
@@ -254,7 +254,7 @@ export function Virements() {
 
             <div className="mt-20 flex justify-end pr-16">
               <div className="text-center">
-                <div className="font-bold mb-1 text-[15px] tracking-wide" style={{ fontFamily: 'Georgia, serif' }}>Le Directeur Général</div>
+                <div className="font-bold mb-1 text-[15px] tracking-wide" style={{ fontFamily: '"Courier New", Courier, monospace' }}>Le Directeur Général</div>
                 <div className="text-[12px]">Franck GUILLET</div>
               </div>
             </div>
