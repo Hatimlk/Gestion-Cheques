@@ -196,7 +196,7 @@ export function Virements() {
         {lines.map((line, idx) => (
           <div key={line.id || idx} className="print-container bg-white text-black font-sans text-[13px]">
             
-            <div className="flex justify-center pt-8">
+            <div className="flex justify-center pt-24">
               <div className="ml-auto w-[400px] grid grid-cols-[100px_1fr] gap-1">
                 <div>Banque:</div>
                 <div className="font-bold">{selectedAccount?.bankName}</div>
