@@ -13,7 +13,7 @@ interface VirementLine {
 }
 
 export function Virements() {
-  const { bankAccounts, partnerList } = useApp();
+  const { bankAccounts, partnerList, addInstance } = useApp();
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [lines, setLines] = useState<VirementLine[]>([
@@ -59,8 +59,29 @@ export function Virements() {
 
   const totalAmount = lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      for (const line of lines) {
+        if (line.beneficiary && line.amount > 0) {
+          const partner = partnerList.find(p => p.name === line.beneficiary);
+          await addInstance({
+            date: date,
+            facture: `VIR-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`,
+            partnerId: partner?.id.toString() || "",
+            partnerName: line.beneficiary,
+            amount: line.amount,
+            paymentDelay: "Immédiat",
+            convention: partner?.convention || "Non défini",
+            mdp: "Virement",
+            observation: "Généré via Ordre de Virement",
+          });
+        }
+      }
+      window.print();
+    } catch (error) {
+      console.error(error);
+      alert("Erreur lors de l'ajout aux Instances.");
+    }
   };
 
   return (
