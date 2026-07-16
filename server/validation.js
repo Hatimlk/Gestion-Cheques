@@ -87,7 +87,7 @@ const partnerUpdateSchema = z.object({
 
 const instanceSchema = z.object({
   date: z.string().min(1),
-  facture: z.string().min(1).max(100),
+  facture: z.string().max(100).optional().default(''),
   partnerId: z.string().max(50).optional().nullable(),
   partnerName: z.string().min(1).max(200),
   amount: z.number(),
