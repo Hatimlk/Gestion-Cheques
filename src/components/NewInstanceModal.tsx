@@ -67,12 +67,14 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!date || !facture || amount === "") return;
+    if (!date || amount === "") return;
 
-    const factureExists = instances.some(i => i.facture.trim().toLowerCase() === facture.trim().toLowerCase() && (!isEditing || i.id !== editInstance?.id));
-    if (factureExists) {
-      alert("Ce N° de facture existe déjà.");
-      return;
+    if (facture.trim() !== "") {
+      const factureExists = instances.some(i => i.facture && i.facture.trim().toLowerCase() === facture.trim().toLowerCase() && (!isEditing || i.id !== editInstance?.id));
+      if (factureExists) {
+        alert("Ce N° de facture existe déjà.");
+        return;
+      }
     }
     
     let partnerName = "";
@@ -164,7 +166,6 @@ export function NewInstanceModal({ isOpen, onClose, editInstance }: NewInstanceM
                 placeholder="Ex: 26V03005"
                 value={facture}
                 onChange={e => setFacture(e.target.value)}
-                required
               />
             </div>
           </div>
