@@ -72,7 +72,7 @@ export function PrintModule() {
           state = JSON.parse(stored);
           // Optional: clear it so it doesn't get reused unintentionally
           // localStorage.removeItem("printData");
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -145,7 +145,7 @@ export function PrintModule() {
     if (!isFromExisting) {
       const bankName = bankType.split(" - ")[0];
       const type = bankType.includes("- Effet") ? "Effet" : "Chèque";
-      
+
       let account = bankAccounts.find(a => a.bankName.toUpperCase() === bankName.toUpperCase());
       let bankAccountId = account ? account.id : (bankAccounts[0]?.id || "b1");
 
@@ -483,8 +483,10 @@ export function PrintModule() {
           }
           #printable-check {
             position: absolute;
-            left: 0;
-            top: 0;
+            right: 0;
+            left: auto;
+            top: 47.5%;
+            transform: translateY(-50%);
             margin: 0;
             padding: 0;
             font-family: Arial, Helvetica, sans-serif !important;
