@@ -33,9 +33,6 @@ export function Calendar() {
             <button onClick={prevMonth} className="p-1 hover:bg-white rounded-[4px] transition text-slate-500 border-none cursor-pointer">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-[12px] font-semibold text-slate-700 hover:text-slate-900 border-none bg-transparent cursor-pointer">
-              Aujourd'hui
-            </button>
             <button onClick={nextMonth} className="p-1 hover:bg-white rounded-[4px] transition text-slate-500 border-none cursor-pointer">
               <ChevronRight className="w-4 h-4" />
             </button>
