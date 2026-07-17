@@ -23,11 +23,11 @@ const DEFAULT_CHEQUE_POSITIONS: Record<ElementId, Position> = {
 };
 
 const DEFAULT_EFFET_POSITIONS: Record<ElementId, Position> = {
-  dueDate: { x: 630, y: 80 },
-  amountNumbers: { x: 600, y: 95 },
+  dueDate: { x: 630, y: 65 },
+  amountNumbers: { x: 600, y: 80 },
   payee: { x: 510, y: 250 },
-  place: { x: 370, y: 280 },
-  date: { x: 530, y: 280 },
+  place: { x: 370, y: 295 },
+  date: { x: 530, y: 295 },
   amountLetters: { x: 580, y: 290 },
   cause: { x: 420, y: 310 },
 };
