@@ -5,7 +5,7 @@ import { Check } from "@/lib/types";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Printer, Eye, Pencil, Check as CheckIcon, X,
-  FileText, RefreshCw, ChevronDown, Share, FileCheck, FileX, Upload, Send
+  FileText, RefreshCw, ChevronDown, Share, FileCheck, FileX, Upload, Send, Trash2
 } from "lucide-react";
 import { ViewCheckModal } from "@/components/ViewCheckModal";
 import { DatePicker } from "@/components/DatePicker";
@@ -45,7 +45,7 @@ const maskRib = (rib: string) => {
 };
 
 export function RegleChecks() {
-  const { checks, bankAccounts, updateCheckStatus, addCheck, instances } = useApp();
+  const { checks, bankAccounts, updateCheckStatus, addCheck, instances, deleteCheck, deleteInstance } = useApp();
   const navigate = useNavigate();
   const [checkToView, setCheckToView] = useState<Check | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -135,6 +135,29 @@ export function RegleChecks() {
     setSelectedCheckIds(prev => 
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedCheckIds.length} élément(s) réglé(s) ?`)) return;
+    
+    for (const id of selectedCheckIds) {
+      if (id.startsWith("inst_")) {
+        const actualId = parseInt(id.replace("inst_", ""));
+        try {
+          await deleteInstance(actualId, true);
+        } catch (err) {
+          console.error("Failed to delete instance", id, err);
+        }
+      } else {
+        try {
+          await deleteCheck(id);
+        } catch (err) {
+          console.error("Failed to delete check", id, err);
+        }
+      }
+    }
+    
+    setSelectedCheckIds([]);
   };
 
   const getChecksToExport = () => {
@@ -548,6 +571,17 @@ export function RegleChecks() {
                 </>
               )}
             </div>
+
+            {selectedCheckIds.length > 0 && (
+              <button 
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 bg-red-500 text-white px-3 py-2 rounded-[6px] text-[12px] font-semibold hover:bg-red-600 transition shadow-sm border-none cursor-pointer"
+                title="Supprimer la sélection"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Supprimer ({selectedCheckIds.length})</span>
+              </button>
+            )}
           </div>
         </div>
 

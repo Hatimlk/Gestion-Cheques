@@ -17,13 +17,13 @@ export function Virements() {
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [lines, setLines] = useState<VirementLine[]>([
-    { id: Date.now().toString(), beneficiary: "", bank: "", rib: "", amount: 0 }
+    { id: Date.now().toString(), beneficiary: "", bank: "Banque Populaire", rib: "", amount: 0 }
   ]);
 
   const selectedAccount = bankAccounts.find(a => a.id === selectedAccountId);
 
   const handleAddLine = () => {
-    setLines([...lines, { id: Date.now().toString(), beneficiary: "", bank: "", rib: "", amount: 0 }]);
+    setLines([...lines, { id: Date.now().toString(), beneficiary: "", bank: "Banque Populaire", rib: "", amount: 0 }]);
   };
 
   const handleRemoveLine = (id: string) => {
