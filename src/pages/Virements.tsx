@@ -73,6 +73,7 @@ export function Virements() {
             paymentDelay: "Immédiat",
             convention: partner?.convention || "Non défini",
             mdp: "Virement",
+            paymentDate: date,
             observation: "Généré via Ordre de Virement",
           });
         }
