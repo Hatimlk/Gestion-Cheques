@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Printer, Plus, Trash2, Send } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import { formatMAD } from "@/lib/utils";
-import { toCardinal } from "n2words/fr-FR";
+import { amountToFrench } from "@/lib/numberToLetters";
 
 interface VirementLine {
   id: string;
@@ -250,7 +250,7 @@ export function Virements() {
                 <div className="border-[2px] border-black px-2 py-1 w-[180px] text-right font-medium">
                   {formatMAD(line.amount || 0).replace('MAD', '').trim()}
                 </div>
-                <span className="ml-1">MAD({toCardinal(line.amount || 0)} dhs )</span>
+                <span className="ml-1">MAD({amountToFrench(line.amount || 0)})</span>
               </div>
               
               <div className="flex items-start mb-6">
