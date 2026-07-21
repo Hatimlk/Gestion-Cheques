@@ -13,12 +13,12 @@ interface Position {
 }
 
 const DEFAULT_CHEQUE_POSITIONS: Record<ElementId, Position> = {
-  amountLetters: { x: 180, y: 135 },
-  amountNumbers: { x: 600, y: 90 },
-  payee: { x: 240, y: 175 },
-  place: { x: 350, y: 225 },
-  date: { x: 550, y: 225 },
-  dueDate: { x: 550, y: 30 },
+  amountLetters: { x: 270, y: 135 },
+  amountNumbers: { x: 640, y: 90 },
+  payee: { x: 330, y: 195 },
+  place: { x: 430, y: 245 },
+  date: { x: 640, y: 245 },
+  dueDate: { x: 640, y: 30 },
   cause: { x: 120, y: 190 },
 };
 
