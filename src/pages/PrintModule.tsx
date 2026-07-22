@@ -59,6 +59,7 @@ export function PrintModule() {
   const [checkType, setCheckType] = useState("Chèque normal");
 
   const [positions, setPositions] = useState<Record<ElementId, Position>>(DEFAULT_CHEQUE_POSITIONS);
+  const [globalOffset, setGlobalOffset] = useState<Position>({ x: 0, y: 0 });
 
   const isEffet = bankType.includes("- Effet");
   const [isFromExisting, setIsFromExisting] = useState(false);
@@ -105,6 +106,13 @@ export function PrintModule() {
     } else {
       setPositions(defaultPos);
     }
+
+    const savedGlobal = localStorage.getItem("printerGlobalOffset");
+    if (savedGlobal) {
+      try {
+        setGlobalOffset(JSON.parse(savedGlobal));
+      } catch (e) {}
+    }
   }, [bankType, isEffet]);
 
   useEffect(() => {
@@ -137,6 +145,11 @@ export function PrintModule() {
     const storageKey = `positions_${bankType.replace(/\s+/g, '_')}`;
     setPositions(defaultPos);
     localStorage.removeItem(storageKey);
+  };
+
+  const saveGlobalOffset = () => {
+    localStorage.setItem("printerGlobalOffset", JSON.stringify(globalOffset));
+    alert("Calibration de l'imprimante enregistrée avec succès !");
   };
 
   const handlePrint = () => {
@@ -250,6 +263,37 @@ export function PrintModule() {
         <div>
           <h1 className="text-[18px] mb-0 font-bold text-slate-900 tracking-tight">Impression</h1>
           <p className="text-[12px] text-slate-500 m-0">Ajustez les positions et imprimez vos chèques ou effets.</p>
+        </div>
+        <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm">
+          <div className="text-[11px] font-semibold text-slate-500 uppercase flex items-center gap-1">
+            ⚙️ Calibration Imprimante
+          </div>
+          <div className="h-4 w-[1px] bg-slate-200"></div>
+          <label className="text-[12px] text-slate-600 flex items-center gap-1">
+            X: 
+            <input 
+              type="number" 
+              value={globalOffset.x} 
+              onChange={e => setGlobalOffset(p => ({ ...p, x: parseInt(e.target.value) || 0 }))}
+              className="w-14 px-1.5 py-1 border border-slate-200 rounded text-center focus:outline-none focus:border-primary"
+            />
+          </label>
+          <label className="text-[12px] text-slate-600 flex items-center gap-1">
+            Y: 
+            <input 
+              type="number" 
+              value={globalOffset.y} 
+              onChange={e => setGlobalOffset(p => ({ ...p, y: parseInt(e.target.value) || 0 }))}
+              className="w-14 px-1.5 py-1 border border-slate-200 rounded text-center focus:outline-none focus:border-primary"
+            />
+          </label>
+          <button 
+            onClick={saveGlobalOffset} 
+            className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-semibold transition-colors"
+            title="Enregistrer la calibration global pour l'imprimante"
+          >
+            Sauvegarder
+          </button>
         </div>
       </div>
 
@@ -380,7 +424,7 @@ export function PrintModule() {
         {/* Screen Version (Framer Motion) */}
         <div
           className="relative bg-[#FDFBF2] border border-slate-300 shadow-md rounded-[4px] overflow-hidden select-none print:hidden"
-          style={{ width: '800px', height: '350px' }}
+          style={{ width: '800px', height: '350px', fontFamily: 'Arial, Helvetica, sans-serif' }}
         >
           {bgImage && (
             <img
@@ -398,7 +442,7 @@ export function PrintModule() {
               onDragEnd={(e, info) => handleDragEnd(el.id, info)}
               initial={{ x: positions[el.id].x, y: positions[el.id].y }}
               animate={{ x: positions[el.id].x, y: positions[el.id].y }}
-              className={`absolute cursor-move text-slate-800 px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
+              className={`absolute left-0 top-0 cursor-move text-slate-800 px-2 py-1 rounded border border-transparent hover:border-blue-400 hover:bg-blue-50/50 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
               style={{ x: positions[el.id].x, y: positions[el.id].y }}
             >
               {Array.isArray(el.text) ? (
@@ -423,8 +467,8 @@ export function PrintModule() {
           {elements.map((el) => (
             <div
               key={el.id}
-              className={`absolute text-black px-2 py-1 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
-              style={{ left: positions[el.id].x, top: positions[el.id].y }}
+              className={`absolute left-0 top-0 text-black px-2 py-1 ${el.className} ${el.id === 'amountLetters' ? '' : 'whitespace-nowrap'}`}
+              style={{ transform: `translate(${positions[el.id].x}px, ${positions[el.id].y}px)` }}
             >
               {Array.isArray(el.text) ? (
                 <div style={{ lineHeight: isEffet ? '1.2' : '2' }} className={isEffet ? "text-center" : ""}>
@@ -486,7 +530,7 @@ export function PrintModule() {
             right: 0;
             left: auto;
             top: 47.5%;
-            transform: translateY(-50%);
+            transform: translate(${globalOffset.x}px, calc(-50% + ${globalOffset.y}px));
             margin: 0;
             padding: 0;
             font-family: Arial, Helvetica, sans-serif !important;
