@@ -14,7 +14,7 @@ interface Position {
 
 const DEFAULT_CHEQUE_POSITIONS: Record<ElementId, Position> = {
   amountLetters: { x: 270, y: 223 },
-  amountNumbers: { x: 640, y: 240 },
+  amountNumbers: { x: 640, y: 178 },
   payee: { x: 330, y: 195 },
   place: { x: 430, y: 333 },
   date: { x: 640, y: 333 },
@@ -98,9 +98,6 @@ export function PrintModule() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (!isEffet && parsed.amountNumbers && parsed.amountNumbers.y === 178) {
-          parsed.amountNumbers.y = 240;
-        }
         setPositions({ ...defaultPos, ...parsed });
       } catch (e) {
         console.error("Error parsing saved positions", e);
@@ -521,6 +518,9 @@ export function PrintModule() {
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+            overflow: hidden !important;
           }
           body * {
             visibility: hidden;
@@ -532,8 +532,8 @@ export function PrintModule() {
             position: absolute;
             right: 0;
             left: auto;
-            top: 50%;
-            transform: translate(${globalOffset.x}px, calc(-50% + ${globalOffset.y}px));
+            top: 50% !important;
+            transform: translate(${globalOffset.x}px, calc(-50% + ${globalOffset.y}px)) !important;
             margin: 0;
             padding: 0;
             font-family: Arial, Helvetica, sans-serif !important;
