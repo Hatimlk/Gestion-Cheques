@@ -14,7 +14,7 @@ interface Position {
 
 const DEFAULT_CHEQUE_POSITIONS: Record<ElementId, Position> = {
   amountLetters: { x: 270, y: 223 },
-  amountNumbers: { x: 640, y: 178 },
+  amountNumbers: { x: 640, y: 240 },
   payee: { x: 330, y: 195 },
   place: { x: 430, y: 333 },
   date: { x: 640, y: 333 },
@@ -98,6 +98,9 @@ export function PrintModule() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (!isEffet && parsed.amountNumbers && parsed.amountNumbers.y === 178) {
+          parsed.amountNumbers.y = 240;
+        }
         setPositions({ ...defaultPos, ...parsed });
       } catch (e) {
         console.error("Error parsing saved positions", e);
