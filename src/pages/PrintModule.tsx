@@ -530,9 +530,10 @@ export function PrintModule() {
           }
           #printable-check {
             position: absolute;
-            left: 50%;
+            right: 0;
+            left: auto;
             top: 50%;
-            transform: translate(calc(-50% + ${globalOffset.x}px), calc(-50% + ${globalOffset.y}px));
+            transform: translate(${globalOffset.x}px, calc(-50% + ${globalOffset.y}px));
             margin: 0;
             padding: 0;
             font-family: Arial, Helvetica, sans-serif !important;
