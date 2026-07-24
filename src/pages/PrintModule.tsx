@@ -147,10 +147,6 @@ export function PrintModule() {
     localStorage.removeItem(storageKey);
   };
 
-  const saveGlobalOffset = () => {
-    localStorage.setItem("printerGlobalOffset", JSON.stringify(globalOffset));
-    alert("Calibration de l'imprimante enregistrée avec succès !");
-  };
 
   const handlePrint = () => {
     window.print();
@@ -264,37 +260,7 @@ export function PrintModule() {
           <h1 className="text-[18px] mb-0 font-bold text-slate-900 tracking-tight">Impression</h1>
           <p className="text-[12px] text-slate-500 m-0">Ajustez les positions et imprimez vos chèques ou effets.</p>
         </div>
-        <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm">
-          <div className="text-[11px] font-semibold text-slate-500 uppercase flex items-center gap-1">
-            ⚙️ Calibration Imprimante
-          </div>
-          <div className="h-4 w-[1px] bg-slate-200"></div>
-          <label className="text-[12px] text-slate-600 flex items-center gap-1">
-            X: 
-            <input 
-              type="number" 
-              value={globalOffset.x} 
-              onChange={e => setGlobalOffset(p => ({ ...p, x: parseInt(e.target.value) || 0 }))}
-              className="w-14 px-1.5 py-1 border border-slate-200 rounded text-center focus:outline-none focus:border-primary"
-            />
-          </label>
-          <label className="text-[12px] text-slate-600 flex items-center gap-1">
-            Y: 
-            <input 
-              type="number" 
-              value={globalOffset.y} 
-              onChange={e => setGlobalOffset(p => ({ ...p, y: parseInt(e.target.value) || 0 }))}
-              className="w-14 px-1.5 py-1 border border-slate-200 rounded text-center focus:outline-none focus:border-primary"
-            />
-          </label>
-          <button 
-            onClick={saveGlobalOffset} 
-            className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-semibold transition-colors"
-            title="Enregistrer la calibration global pour l'imprimante"
-          >
-            Sauvegarder
-          </button>
-        </div>
+
       </div>
 
       <div className="bg-white p-4 rounded-[12px] border border-slate-200 shadow-sm print:hidden">
