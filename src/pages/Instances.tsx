@@ -61,6 +61,34 @@ const formatDateFr = (dateStr: string) => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 };
 
+const getExpectedPaymentDate = (invoiceDateStr: string, conventionStr?: string, paymentDelayStr?: string) => {
+  if (!invoiceDateStr) return "";
+  const date = new Date(invoiceDateStr);
+  if (isNaN(date.getTime())) return "";
+
+  let days = 0;
+  if (conventionStr) {
+    const match = conventionStr.match(/\d+/);
+    if (match) {
+      days = parseInt(match[0], 10);
+    }
+  }
+  if (days === 0 && paymentDelayStr) {
+    const match = paymentDelayStr.match(/\d+/);
+    if (match) {
+      days = parseInt(match[0], 10);
+    }
+  }
+
+  const expectedDate = new Date(date.getTime());
+  expectedDate.setDate(expectedDate.getDate() + days);
+
+  const year = expectedDate.getFullYear();
+  const month = String(expectedDate.getMonth() + 1).padStart(2, '0');
+  const day = String(expectedDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function Instances() {
   const { instances, deleteInstance, addInstance, updateInstance } = useApp();
   const navigate = useNavigate();
@@ -73,7 +101,7 @@ export function Instances() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<number[]>([]);
-  const [sortBy, setSortBy] = useState<"date" | "alphabetical" | "delay" | "convention" | "mdp">("date");
+  const [sortBy, setSortBy] = useState<"date" | "alphabetical" | "delay" | "convention" | "expectedDate" | "mdp">("date");
   const [delayFilter, setDelayFilter] = useState<string>("all");
   const [conventionFilter, setConventionFilter] = useState<string>("all");
   const [mdpFilter, setMdpFilter] = useState<string>("all");
@@ -123,6 +151,11 @@ export function Instances() {
     }
     if (sortBy === "convention") {
       return (a.convention || "").localeCompare(b.convention || "");
+    }
+    if (sortBy === "expectedDate") {
+      const dateA = getExpectedPaymentDate(a.date, a.convention, a.paymentDelay);
+      const dateB = getExpectedPaymentDate(b.date, b.convention, b.paymentDelay);
+      return dateA.localeCompare(dateB);
     }
     if (sortBy === "mdp") {
       return (a.mdp || "").localeCompare(b.mdp || "");
@@ -176,11 +209,12 @@ export function Instances() {
 
   const handleExportCSV = (separator = ',') => {
     const items = getInstancesToExport();
-    const headers = ["DATE", "DUREE", "MOIS", "FACTURE", "FOURNISSEUR / BÉNÉFICIAIRE", "MONTANT", "DELAI DE PAIEMENT", "CONVENTION", "MDP", "DATE DE PAIEMENT", "OBSERVATION"];
+    const headers = ["DATE", "DUREE", "MOIS", "FACTURE", "FOURNISSEUR / BÉNÉFICIAIRE", "MONTANT", "DELAI DE PAIEMENT", "CONVENTION", "DATE PRÉVUE RÈGLEMENT", "MDP", "DATE DE PAIEMENT", "OBSERVATION"];
     
     const rows = items.map(inst => {
       const dur = getDuration(inst.date, inst.paymentDate);
       const mois = getFrenchMonth(inst.date);
+      const datePrevue = getExpectedPaymentDate(inst.date, inst.convention, inst.paymentDelay);
       
       return [
         formatDateFr(inst.date),
@@ -191,6 +225,7 @@ export function Instances() {
         inst.amount,
         inst.paymentDelay,
         inst.convention,
+        formatDateFr(datePrevue),
         inst.mdp,
         inst.paymentDate ? formatDateFr(inst.paymentDate) : "",
         inst.observation || ""
@@ -221,6 +256,7 @@ export function Instances() {
     const tableRows = items.map(inst => {
       const dur = getDuration(inst.date, inst.paymentDate);
       const mois = getFrenchMonth(inst.date);
+      const datePrevue = getExpectedPaymentDate(inst.date, inst.convention, inst.paymentDelay);
       return `
         <tr>
           <td style="border: 1px solid #ddd; padding: 6px;">${formatDateFr(inst.date)}</td>
@@ -231,6 +267,7 @@ export function Instances() {
           <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${formatMAD(inst.amount)}</td>
           <td style="border: 1px solid #ddd; padding: 6px;">${inst.paymentDelay}</td>
           <td style="border: 1px solid #ddd; padding: 6px;">${inst.convention}</td>
+          <td style="border: 1px solid #ddd; padding: 6px;">${formatDateFr(datePrevue)}</td>
           <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">${inst.mdp}</td>
           <td style="border: 1px solid #ddd; padding: 6px;">${inst.paymentDate ? formatDateFr(inst.paymentDate) : ""}</td>
           <td style="border: 1px solid #ddd; padding: 6px;">${inst.observation || ""}</td>
@@ -268,6 +305,7 @@ export function Instances() {
                 <th>MONTANT</th>
                 <th>DELAI DE PAIEMENT</th>
                 <th>CONVENTION</th>
+                <th>DATE PRÉVUE RÈGLEMENT</th>
                 <th>MDP</th>
                 <th>DATE DE PAIEMENT</th>
                 <th>OBSERVATION</th>
@@ -633,6 +671,7 @@ export function Instances() {
                 <option value="alphabetical">Ordre alphabétique (A-Z)</option>
                 <option value="delay">Délai de paiement</option>
                 <option value="convention">Convention</option>
+                <option value="expectedDate">Date prévue règlement</option>
                 <option value="mdp">Mode de paiement</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -695,7 +734,7 @@ export function Instances() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[12px] whitespace-nowrap table-fixed min-w-[1200px]">
+          <table className="w-full text-left text-[12px] whitespace-nowrap table-fixed min-w-[1350px]">
             <thead className="bg-[#F8FAFC] border-y border-slate-200">
               <tr>
                 <th className="px-4 py-4 w-10">
@@ -715,6 +754,7 @@ export function Instances() {
                 <th className="px-3 py-4 w-[125px] font-bold text-slate-600 text-[11px] tracking-wide text-right">MONTANT</th>
                 <th className="px-3 py-4 w-[150px] font-bold text-slate-600 text-[11px] tracking-wide">DELAI DE PAIEMENT</th>
                 <th className="px-3 py-4 w-[120px] font-bold text-slate-600 text-[11px] tracking-wide">CONVENTION</th>
+                <th className="px-3 py-4 w-[160px] font-bold text-slate-600 text-[11px] tracking-wide">DATE PRÉVUE RÈGLEMENT</th>
                 <th className="px-3 py-4 w-[75px] font-bold text-slate-600 text-[11px] tracking-wide text-center">MDP</th>
                 <th className="px-3 py-4 w-[140px] font-bold text-slate-600 text-[11px] tracking-wide">DATE DE PAIEMENT</th>
                 <th className="px-3 py-4 w-[160px] font-bold text-slate-600 text-[11px] tracking-wide">OBSERVATION</th>
@@ -825,6 +865,9 @@ export function Instances() {
                     <td className="px-3 py-4 w-[120px] text-slate-600 font-medium">
                       {inst.convention}
                     </td>
+                    <td className="px-3 py-4 w-[160px] font-semibold text-slate-700">
+                      {formatDateFr(getExpectedPaymentDate(inst.date, inst.convention, inst.paymentDelay))}
+                    </td>
                     <td className="px-3 py-4 w-[75px] text-center font-bold text-slate-700 bg-slate-50 rounded px-1.5 py-0.5 border border-slate-100">
                       {inst.mdp}
                     </td>
@@ -845,7 +888,7 @@ export function Instances() {
               })}
               {filteredInstances.length === 0 && (
                 <tr>
-                  <td colSpan={13} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={14} className="px-4 py-12 text-center text-slate-500">
                     Aucune facture en instance trouvée.
                   </td>
                 </tr>
