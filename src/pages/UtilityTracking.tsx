@@ -44,17 +44,25 @@ export function UtilityTracking() {
   useEffect(() => { if (years.length && !years.includes(year)) setYear(years[0]); }, [years, year]);
 
   const monthly = useMemo(() => {
-    const result = new Map<string, { period: string; electricity: number; water: number; iam: number; consumptionKwh: number; consumptionM3: number }>();
+    const result = new Map<string, { period: string; electricity: number; water: number; iam: number; consumptionKwh: number; consumptionM3: number; globalElectricity: number | null; globalWater: number | null }>();
     records.filter(r => r.period.startsWith(year)).forEach(r => {
-      const row = result.get(r.period) || { period: r.period, electricity: 0, water: 0, iam: 0, consumptionKwh: 0, consumptionM3: 0 };
-      row.electricity += n(r.electricityAmount);
-      row.water += n(r.waterAmount1) + n(r.waterAmount2);
-      row.iam += n(r.iamFixed) + n(r.iamMobile);
-      row.consumptionKwh += n(r.electricityConsumption);
-      row.consumptionM3 += n(r.waterConsumption1) + n(r.waterConsumption2);
+      const row = result.get(r.period) || { period: r.period, electricity: 0, water: 0, iam: 0, consumptionKwh: 0, consumptionM3: 0, globalElectricity: null, globalWater: null };
+      if (r.unit === 'GLOBAL') {
+        row.globalElectricity = r.electricityAmount;
+        row.globalWater = n(r.waterAmount1) + n(r.waterAmount2);
+        row.iam = n(r.iamFixed) + n(r.iamMobile);
+      } else {
+        row.electricity += n(r.electricityAmount);
+        row.water += n(r.waterAmount1) + n(r.waterAmount2);
+        row.consumptionKwh += n(r.electricityConsumption);
+        row.consumptionM3 += n(r.waterConsumption1) + n(r.waterConsumption2);
+      }
       result.set(r.period, row);
     });
-    return [...result.values()].sort((a, b) => a.period.localeCompare(b.period));
+    return [...result.values()].map(row => ({ ...row,
+      electricity: row.globalElectricity ?? row.electricity,
+      water: row.globalWater ?? row.water,
+    })).sort((a, b) => a.period.localeCompare(b.period));
   }, [records, year]);
 
   const totals = monthly.reduce((a, r) => ({ electricity: a.electricity + r.electricity, water: a.water + r.water, iam: a.iam + r.iam }), { electricity: 0, water: 0, iam: 0 });
