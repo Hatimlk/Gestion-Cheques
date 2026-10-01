@@ -65,7 +65,7 @@ router.get('/records/:id', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Chargement impossible.' }); }
 });
 
-router.post('/records', canManage, async (req, res) => {
+router.post('/records', async (req, res) => {
   const data = normalize(req.body);
   if (!data) return res.status(400).json({ error: 'Données invalides ou aucun poste renseigné.' });
   try {
@@ -82,7 +82,7 @@ router.post('/records', canManage, async (req, res) => {
   }
 });
 
-router.put('/records/:id', canManage, async (req, res) => {
+router.put('/records/:id', async (req, res) => {
   const data = normalize(req.body);
   if (!data) return res.status(400).json({ error: 'Données invalides ou aucun poste renseigné.' });
   try {
