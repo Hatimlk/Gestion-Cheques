@@ -38,7 +38,16 @@ export function UtilityTracking() {
     catch (err) { setError(err instanceof Error ? err.message : 'Chargement impossible.'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const refresh = () => load();
+    const interval = window.setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
 
   const years = useMemo(() => Array.from(new Set(records.map(r => r.period.slice(0, 4)))).sort().reverse(), [records]);
   useEffect(() => { if (years.length && !years.includes(year)) setYear(years[0]); }, [years, year]);
@@ -121,7 +130,7 @@ export function UtilityTracking() {
         <th className="px-4 py-3">Mois</th><th className="px-4 py-3">Unité</th><th className="px-4 py-3 text-right">Électricité</th><th className="px-4 py-3 text-right">Conso. kWh</th>
         <th className="px-4 py-3 text-right">Eau compteur 1</th><th className="px-4 py-3 text-right">Eau compteur 2</th><th className="px-4 py-3 text-right">IAM fixe</th><th className="px-4 py-3 text-right">IAM mobile</th>{canEdit && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
         <tbody className="divide-y divide-slate-100">{loading ? <tr><td colSpan={9} className="p-10 text-center text-slate-400">Chargement…</td></tr> : records.filter(r => r.period.startsWith(year)).map(item => <tr key={item.id} className="hover:bg-slate-50/70">
-          <td className="px-4 py-3 font-semibold capitalize text-slate-800">{monthLabel(item.period)}</td><td className="px-4 py-3"><span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">{item.unit === 'GLOBAL' ? 'IAM / Total' : item.unit}</span></td>
+          <td className="px-4 py-3 font-semibold capitalize text-slate-800">{monthLabel(item.period)}</td><td className="px-4 py-3"><span className={`rounded-md px-2 py-1 text-xs font-bold ${item.unit === 'GLOBAL' ? 'bg-violet-50 text-violet-700' : 'bg-slate-100 text-slate-700'}`}>{item.unit === 'GLOBAL' ? 'Total mensuel' : item.unit}</span></td>
           <td className="px-4 py-3 text-right font-semibold">{item.electricityAmount != null ? money(item.electricityAmount) : '—'}</td><td className="px-4 py-3 text-right text-slate-600">{item.electricityConsumption ?? '—'}</td>
           <td className="px-4 py-3 text-right">{item.waterAmount1 != null ? `${money(item.waterAmount1)} · ${item.waterConsumption1 ?? '—'} m³` : '—'}</td><td className="px-4 py-3 text-right">{item.waterAmount2 != null ? `${money(item.waterAmount2)} · ${item.waterConsumption2 ?? '—'} m³` : '—'}</td>
           <td className="px-4 py-3 text-right">{item.iamFixed != null ? money(item.iamFixed) : '—'}</td><td className="px-4 py-3 text-right">{item.iamMobile != null ? money(item.iamMobile) : '—'}</td>
@@ -130,8 +139,8 @@ export function UtilityTracking() {
     </div>
 
     {modalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"><form onSubmit={submit} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-      <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4"><div><h2 className="font-bold text-slate-900">{editingId ? 'Modifier le relevé' : 'Nouvelle saisie mensuelle'}</h2><p className="text-xs text-slate-500">Une ligne par unité ; utilisez « IAM / Total » pour les abonnements.</p></div><button type="button" onClick={() => setModalOpen(false)} className="rounded-lg p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
-      <div className="grid gap-5 p-6 sm:grid-cols-2"><Field label="Mois"><input required type="month" value={form.period} onChange={e => setForm({...form, period:e.target.value})} className="input" /></Field><Field label="Unité"><select value={form.unit} onChange={e => setForm({...form, unit:e.target.value as Unit})} className="input"><option value="GLOBAL">IAM / Total mensuel</option><option>G1</option><option>G2</option><option>G3</option><option>G5</option></select></Field>
+      <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4"><div><h2 className="font-bold text-slate-900">{editingId ? 'Modifier le relevé' : 'Nouvelle saisie mensuelle'}</h2><p className="text-xs text-slate-500">Une ligne par unité ; utilisez « Totaux / IAM » uniquement pour la synthèse du mois.</p></div><button type="button" onClick={() => setModalOpen(false)} className="rounded-lg p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
+      <div className="grid gap-5 p-6 sm:grid-cols-2"><Field label="Mois"><input required type="month" value={form.period} onChange={e => setForm({...form, period:e.target.value})} className="input" /></Field><Field label="Unité"><select value={form.unit} onChange={e => setForm({...form, unit:e.target.value as Unit})} className="input"><option value="GLOBAL">Totaux / IAM du mois</option><option>G1</option><option>G2</option><option>G3</option><option>G5</option></select></Field>
         <Section title="Électricité" /><NumberField label="Montant (MAD)" name="electricityAmount" form={form} setForm={setForm} /><NumberField label="Consommation (kWh)" name="electricityConsumption" form={form} setForm={setForm} />
         <Section title="Eau — compteur 1" /><NumberField label="Montant (MAD)" name="waterAmount1" form={form} setForm={setForm} /><NumberField label="Consommation (m³)" name="waterConsumption1" form={form} setForm={setForm} />
         <Section title="Eau — compteur 2" /><NumberField label="Montant (MAD)" name="waterAmount2" form={form} setForm={setForm} /><NumberField label="Consommation (m³)" name="waterConsumption2" form={form} setForm={setForm} />
