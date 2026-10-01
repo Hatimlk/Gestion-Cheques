@@ -72,3 +72,25 @@ CREATE TABLE IF NOT EXISTS instances (
   observation TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS consumption_branches (
+  id SERIAL PRIMARY KEY,
+  code VARCHAR(20) UNIQUE NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS consumption_records (
+  id SERIAL PRIMARY KEY,
+  branch_id INTEGER REFERENCES consumption_branches(id) ON DELETE RESTRICT,
+  year SMALLINT NOT NULL CHECK(year BETWEEN 2000 AND 2100),
+  month SMALLINT NOT NULL CHECK(month BETWEEN 1 AND 12),
+  electricity_amount NUMERIC(15,2), electricity_kwh NUMERIC(15,2),
+  water_amount NUMERIC(15,2), water_m3 NUMERIC(15,2),
+  telecom_internet_fixed_amount NUMERIC(15,2), telecom_mobile_amount NUMERIC(15,2),
+  notes TEXT, created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS consumption_records_period_uidx
+  ON consumption_records (COALESCE(branch_id,0),year,month);

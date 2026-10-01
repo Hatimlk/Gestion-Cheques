@@ -16,6 +16,8 @@ const Guide = lazy(() => import("./pages/Guide").then(m => ({ default: m.Guide }
 const RegleChecks = lazy(() => import("./pages/RegleChecks").then(m => ({ default: m.RegleChecks })));
 const Instances = lazy(() => import("./pages/Instances").then(m => ({ default: m.Instances })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
+const Consumptions = lazy(() => import("./pages/Consumptions").then(m => ({ default: m.Consumptions })));
+const ConsumptionBranch = lazy(() => import("./pages/ConsumptionBranch").then(m => ({ default: m.ConsumptionBranch })));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, initialized } = useApp();
@@ -52,6 +54,8 @@ export default function App() {
             <Route path="roles" element={<Suspense fallback={<LoadingFallback />}><AdminRoute><Roles /></AdminRoute></Suspense>} />
             <Route path="calendrier" element={<Suspense fallback={<LoadingFallback />}><Calendar /></Suspense>} />
             <Route path="partenaires" element={<Suspense fallback={<LoadingFallback />}><Partners /></Suspense>} />
+            <Route path="consommations" element={<Suspense fallback={<LoadingFallback />}><Consumptions /></Suspense>} />
+            <Route path="consommations/branches/:code" element={<Suspense fallback={<LoadingFallback />}><ConsumptionBranch /></Suspense>} />
             <Route path="guide" element={<Suspense fallback={<LoadingFallback />}><Guide /></Suspense>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
