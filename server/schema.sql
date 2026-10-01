@@ -72,21 +72,3 @@ CREATE TABLE IF NOT EXISTS instances (
   observation TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
-
-CREATE TABLE IF NOT EXISTS utility_tracking (
-  id SERIAL PRIMARY KEY,
-  period DATE NOT NULL,
-  unit VARCHAR(10) NOT NULL CHECK (unit IN ('GLOBAL', 'G1', 'G2', 'G3', 'G5')),
-  electricity_amount NUMERIC(15,2),
-  electricity_consumption NUMERIC(15,2),
-  water_amount_1 NUMERIC(15,2),
-  water_consumption_1 NUMERIC(15,2),
-  water_amount_2 NUMERIC(15,2),
-  water_consumption_2 NUMERIC(15,2),
-  iam_fixed NUMERIC(15,2),
-  iam_mobile NUMERIC(15,2),
-  notes TEXT,
-  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  updated_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(period, unit)
-);

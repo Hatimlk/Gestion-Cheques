@@ -16,7 +16,6 @@ const Guide = lazy(() => import("./pages/Guide").then(m => ({ default: m.Guide }
 const RegleChecks = lazy(() => import("./pages/RegleChecks").then(m => ({ default: m.RegleChecks })));
 const Instances = lazy(() => import("./pages/Instances").then(m => ({ default: m.Instances })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
-const UtilityTracking = lazy(() => import("./pages/UtilityTracking").then(m => ({ default: m.UtilityTracking })));
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, initialized } = useApp();
@@ -53,7 +52,6 @@ export default function App() {
             <Route path="roles" element={<Suspense fallback={<LoadingFallback />}><AdminRoute><Roles /></AdminRoute></Suspense>} />
             <Route path="calendrier" element={<Suspense fallback={<LoadingFallback />}><Calendar /></Suspense>} />
             <Route path="partenaires" element={<Suspense fallback={<LoadingFallback />}><Partners /></Suspense>} />
-            <Route path="consommations" element={<Suspense fallback={<LoadingFallback />}><UtilityTracking /></Suspense>} />
             <Route path="guide" element={<Suspense fallback={<LoadingFallback />}><Guide /></Suspense>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

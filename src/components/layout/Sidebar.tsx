@@ -12,8 +12,7 @@ import {
   FileCheck,
   Clock,
   LogOut,
-  Send,
-  Gauge
+  Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/AppContext";
@@ -24,7 +23,6 @@ const NAV_GROUPS = [
     items: [
       { name: "Tableau De Bord", path: "/", icon: LayoutDashboard },
       { name: "Comptes", path: "/comptes", icon: Briefcase },
-      { name: "Consommations", path: "/consommations", icon: Gauge },
       { name: "Rôles", path: "/roles", icon: UserCog, hasInfo: true },
     ]
   },
