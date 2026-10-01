@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { BarChart3, Droplets, Pencil, Plus, Trash2, Wifi, X, Zap } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { api } from '@/lib/api';
@@ -75,6 +75,18 @@ export function UtilityTracking() {
   }, [records, year]);
 
   const totals = monthly.reduce((a, r) => ({ electricity: a.electricity + r.electricity, water: a.water + r.water, iam: a.iam + r.iam }), { electricity: 0, water: 0, iam: 0 });
+  const tableGroups = useMemo(() => {
+    const periods = new Map<string, { global?: RecordItem; units: RecordItem[] }>();
+    records.filter(r => r.period.startsWith(year)).forEach(item => {
+      const group = periods.get(item.period) || { units: [] };
+      if (item.unit === 'GLOBAL') group.global = item;
+      else group.units.push(item);
+      periods.set(item.period, group);
+    });
+    return [...periods.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([period, group]) => ({
+      period, global: group.global, units: group.units.sort((a, b) => a.unit.localeCompare(b.unit)),
+    }));
+  }, [records, year]);
   const openNew = () => { setEditingId(null); setForm({ ...emptyForm, period: `${year}-${String(Math.min(12, monthly.length + 1)).padStart(2, '0')}` }); setError(''); setModalOpen(true); };
   const openEdit = (item: RecordItem) => {
     setEditingId(item.id);
@@ -126,16 +138,20 @@ export function UtilityTracking() {
 
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-bold text-slate-800">Détail des relevés</h2></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500"><tr>
-        <th className="px-4 py-3">Mois</th><th className="px-4 py-3">Unité</th><th className="px-4 py-3 text-right">Électricité</th><th className="px-4 py-3 text-right">Conso. kWh</th>
-        <th className="px-4 py-3 text-right">Eau compteur 1</th><th className="px-4 py-3 text-right">Eau compteur 2</th><th className="px-4 py-3 text-right">IAM fixe</th><th className="px-4 py-3 text-right">IAM mobile</th>{canEdit && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
-        <tbody className="divide-y divide-slate-100">{loading ? <tr><td colSpan={9} className="p-10 text-center text-slate-400">Chargement…</td></tr> : records.filter(r => r.period.startsWith(year)).map(item => <tr key={item.id} className="hover:bg-slate-50/70">
-          <td className="px-4 py-3 font-semibold capitalize text-slate-800">{monthLabel(item.period)}</td><td className="px-4 py-3"><span className={`rounded-md px-2 py-1 text-xs font-bold ${item.unit === 'GLOBAL' ? 'bg-violet-50 text-violet-700' : 'bg-slate-100 text-slate-700'}`}>{item.unit === 'GLOBAL' ? 'Total mensuel' : item.unit}</span></td>
-          <td className="px-4 py-3 text-right font-semibold">{item.electricityAmount != null ? money(item.electricityAmount) : '—'}</td><td className="px-4 py-3 text-right text-slate-600">{item.electricityConsumption ?? '—'}</td>
-          <td className="px-4 py-3 text-right">{item.waterAmount1 != null ? `${money(item.waterAmount1)} · ${item.waterConsumption1 ?? '—'} m³` : '—'}</td><td className="px-4 py-3 text-right">{item.waterAmount2 != null ? `${money(item.waterAmount2)} · ${item.waterConsumption2 ?? '—'} m³` : '—'}</td>
-          <td className="px-4 py-3 text-right">{item.iamFixed != null ? money(item.iamFixed) : '—'}</td><td className="px-4 py-3 text-right">{item.iamMobile != null ? money(item.iamMobile) : '—'}</td>
-          {canEdit && <td className="px-4 py-3"><div className="flex justify-end gap-1"><button onClick={() => openEdit(item)} className="rounded-lg p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-600" title="Modifier"><Pencil className="h-4 w-4" /></button><button onClick={() => remove(item.id)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Supprimer"><Trash2 className="h-4 w-4" /></button></div></td>}
-        </tr>)}</tbody></table></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[1450px] text-left text-sm"><thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500"><tr>
+        <th className="px-3 py-3">Mois</th><th className="px-3 py-3">Unité</th><th className="px-3 py-3 text-right">Élec. montant</th><th className="px-3 py-3 text-right">Conso. kWh</th><th className="px-3 py-3 text-right">Total élec.</th>
+        <th className="px-3 py-3 text-right">Eau 1 montant</th><th className="px-3 py-3 text-right">Eau 1 m³</th><th className="px-3 py-3 text-right">Eau 2 montant</th><th className="px-3 py-3 text-right">Eau 2 m³</th><th className="px-3 py-3 text-right">Total eau</th><th className="px-3 py-3 text-right">IAM fixe</th><th className="px-3 py-3 text-right">IAM mobile</th>{canEdit && <th className="px-3 py-3 text-right">Actions</th>}</tr></thead>
+        <tbody>{loading ? <tr><td colSpan={13} className="p-10 text-center text-slate-400">Chargement…</td></tr> : tableGroups.map(group => <Fragment key={group.period}>{group.units.map((item, index) => <tr key={item.id} className={`border-b border-slate-100 hover:bg-slate-50/70 ${index === 0 ? 'border-t-2 border-t-slate-200' : ''}`}>
+          {index === 0 && <td rowSpan={group.units.length} className="w-36 bg-slate-50/60 px-3 py-3 align-top font-bold capitalize text-slate-800"><div className="flex items-center gap-1">{monthLabel(group.period)}{canEdit && group.global && <button onClick={() => openEdit(group.global!)} className="rounded p-1 text-slate-400 hover:text-blue-600" title="Modifier les totaux et IAM"><Pencil className="h-3.5 w-3.5" /></button>}</div></td>}
+          <td className="px-3 py-3"><span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">{item.unit}</span></td>
+          <td className="px-3 py-3 text-right font-semibold">{item.electricityAmount != null ? money(item.electricityAmount) : '—'}</td><td className="px-3 py-3 text-right text-slate-600">{item.electricityConsumption ?? '—'}</td>
+          {index === 0 && <td rowSpan={group.units.length} className="bg-amber-50/40 px-3 py-3 text-right align-middle font-bold text-amber-800">{group.global?.electricityAmount != null ? money(group.global.electricityAmount) : '—'}</td>}
+          <td className="px-3 py-3 text-right">{item.waterAmount1 != null ? money(item.waterAmount1) : '—'}</td><td className="px-3 py-3 text-right text-slate-600">{item.waterConsumption1 ?? '—'}</td><td className="px-3 py-3 text-right">{item.waterAmount2 != null ? money(item.waterAmount2) : '—'}</td><td className="px-3 py-3 text-right text-slate-600">{item.waterConsumption2 ?? '—'}</td>
+          {index === 0 && <td rowSpan={group.units.length} className="bg-blue-50/40 px-3 py-3 text-right align-middle font-bold text-blue-800">{group.global?.waterAmount1 != null ? money(group.global.waterAmount1) : '—'}</td>}
+          {index === 0 && <td rowSpan={group.units.length} className="bg-violet-50/40 px-3 py-3 text-right align-middle font-semibold text-violet-800">{group.global?.iamFixed != null ? money(group.global.iamFixed) : '—'}</td>}
+          {index === 0 && <td rowSpan={group.units.length} className="bg-violet-50/40 px-3 py-3 text-right align-middle font-semibold text-violet-800">{group.global?.iamMobile != null ? money(group.global.iamMobile) : '—'}</td>}
+          {canEdit && <td className="px-3 py-3"><div className="flex justify-end gap-1"><button onClick={() => openEdit(item)} className="rounded-lg p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-600" title="Modifier"><Pencil className="h-4 w-4" /></button><button onClick={() => remove(item.id)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Supprimer"><Trash2 className="h-4 w-4" /></button></div></td>}
+        </tr>)}</Fragment>)}</tbody></table></div>
     </div>
 
     {modalOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"><form onSubmit={submit} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
