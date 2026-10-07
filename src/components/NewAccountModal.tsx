@@ -11,7 +11,8 @@ const MOROCCAN_BANKS = [
   "BMCI",
   "Crédit du Maroc",
   "Al Barid Bank",
-  "CFG Bank"
+  "CFG Bank",
+  "CDG"
 ];
 import { useApp } from "@/lib/AppContext";
 import type { BankAccount } from "@/lib/types";

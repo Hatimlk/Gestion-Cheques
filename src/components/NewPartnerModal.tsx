@@ -11,7 +11,8 @@ const MOROCCAN_BANKS = [
   "BMCI",
   "Crédit du Maroc",
   "Al Barid Bank",
-  "CFG Bank"
+  "CFG Bank",
+  "CDG"
 ];
 
 export type PartnerType = "Client" | "Fournisseur";
